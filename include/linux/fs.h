@@ -21,7 +21,7 @@
  * that later. Anyway, now the file code is no longer dependent
  * on bitmaps in unsigned longs, but uses the new fd_set structure..
  *
- * Some programs (notably those using select()) may have to be 
+ * Some programs (notably those using select()) may have to be
  * recompiled to take full advantage of the new limits..
  */
 
@@ -142,11 +142,11 @@ typedef char buffer_block[BLOCK_SIZE];
  * Try to keep the most commonly used fields in single cache lines (16
  * bytes) to improve performance.  This ordering should be
  * particularly beneficial on 32-bit processors.
- * 
+ *
  * We use the first 16 bytes for the data which is used in searches
  * over the block hash lists (ie. getblk(), find_buffer() and
  * friends).
- * 
+ *
  * The second 16 bytes we use for lru buffer scans, as used by
  * sync_buffers() and refill_freelist().  -- sct
  */
@@ -170,7 +170,7 @@ struct buffer_head {
 	unsigned int b_list;		/* List that this buffer appears */
 	unsigned long b_flushtime;      /* Time when this (dirty) buffer
 					 * should be written */
-	unsigned long b_lru_time;       /* Time when this buffer was 
+	unsigned long b_lru_time;       /* Time when this buffer was
 					 * last used. */
 	struct wait_queue * b_wait;
 	struct buffer_head * b_prev;		/* doubly linked list of hash-queue */
@@ -181,7 +181,7 @@ struct buffer_head {
 static inline int buffer_uptodate(struct buffer_head * bh)
 {
 	return test_bit(BH_Uptodate, &bh->b_state);
-}	
+}
 
 static inline int buffer_dirty(struct buffer_head * bh)
 {
@@ -265,17 +265,17 @@ struct iattr {
 #include <linux/quota.h>
 
 struct inode {
-	kdev_t		i_dev;
+	kdev_t			i_dev;
 	unsigned long	i_ino;
-	umode_t		i_mode;
-	nlink_t		i_nlink;
-	uid_t		i_uid;
-	gid_t		i_gid;
-	kdev_t		i_rdev;
-	off_t		i_size;
-	time_t		i_atime;
-	time_t		i_mtime;
-	time_t		i_ctime;
+	umode_t			i_mode;
+	nlink_t			i_nlink;
+	uid_t			i_uid;
+	gid_t			i_gid;
+	kdev_t			i_rdev;
+	off_t			i_size;
+	time_t			i_atime;
+	time_t			i_mtime;
+	time_t			i_ctime;
 	unsigned long	i_blksize;
 	unsigned long	i_blocks;
 	unsigned long	i_version;
@@ -366,7 +366,7 @@ extern int locks_mandatory_area(int read_write, struct inode *inode,
 
 extern inline int locks_verify_locked(struct inode *inode)
 {
-#ifdef CONFIG_LOCK_MANDATORY	 
+#ifdef CONFIG_LOCK_MANDATORY
 	/* Candidates for mandatory locking have the setgid bit set
 	 * but no group execute bit -  an otherwise meaningless combination.
 	 */
@@ -379,7 +379,7 @@ extern inline int locks_verify_area(int read_write, struct inode *inode,
 				    struct file *filp, unsigned int offset,
 				    unsigned int count)
 {
-#ifdef CONFIG_LOCK_MANDATORY	 
+#ifdef CONFIG_LOCK_MANDATORY
 	/* Candidates for mandatory locking have the setgid bit set
 	 * but no group execute bit -  an otherwise meaningless combination.
 	 */
@@ -451,8 +451,8 @@ struct super_block {
  * to have different dirent layouts depending on the binary type.
  */
 typedef int (*filldir_t)(void *, const char *, int, off_t, ino_t);
-	
-struct file_operations {
+
+struct file_operations { // 文件相关的操作
 	int (*lseek) (struct inode *, struct file *, off_t, int);
 	int (*read) (struct inode *, struct file *, char *, int);
 	int (*write) (struct inode *, struct file *, const char *, int);
@@ -468,7 +468,7 @@ struct file_operations {
 	int (*revalidate) (kdev_t dev);
 };
 
-struct inode_operations {
+struct inode_operations { // inode相关的操作
 	struct file_operations * default_file_ops;
 	int (*create) (struct inode *,const char *,int,int,struct inode **);
 	int (*lookup) (struct inode *,const char *,int,struct inode **);
@@ -490,12 +490,12 @@ struct inode_operations {
 };
 
 struct super_operations {
-	void (*read_inode) (struct inode *);
+	void (*read_inode) (struct inode *);  // 读取inode信息到内存
 	int (*notify_change) (struct inode *, struct iattr *);
-	void (*write_inode) (struct inode *);
-	void (*put_inode) (struct inode *);
-	void (*put_super) (struct super_block *);
-	void (*write_super) (struct super_block *);
+	void (*write_inode) (struct inode *); // 写入inode信息到磁盘
+	void (*put_inode) (struct inode *);   // 释放inode
+	void (*put_super) (struct super_block *);   // 释放超级块
+	void (*write_super) (struct super_block *); // 写入超级块数据到磁盘
 	void (*statfs) (struct super_block *, struct statfs *, int);
 	int (*remount_fs) (struct super_block *, int *, char *);
 };
@@ -645,7 +645,7 @@ extern inline void bforget(struct buffer_head *buf)
 }
 extern void set_blocksize(kdev_t dev, int size);
 extern struct buffer_head * bread(kdev_t dev, int block, int size);
-extern struct buffer_head * breada(kdev_t dev,int block, int size, 
+extern struct buffer_head * breada(kdev_t dev,int block, int size,
 				   unsigned int pos, unsigned int filesize);
 
 extern int generic_readpage(struct inode *, struct page *);

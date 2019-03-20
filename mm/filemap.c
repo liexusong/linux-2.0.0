@@ -299,7 +299,7 @@ static unsigned long try_to_read_ahead(struct inode * inode, unsigned long offse
 #endif
 }
 
-/* 
+/*
  * Wait for IO to complete on a locked page.
  *
  * This must be called with the caller "holding" the page,
@@ -330,11 +330,11 @@ repeat:
 /*
  * Read-ahead profiling informations
  * ---------------------------------
- * Every PROFILE_MAXREADCOUNT, the following informations are written 
+ * Every PROFILE_MAXREADCOUNT, the following informations are written
  * to the syslog:
  *   Percentage of asynchronous read-ahead.
  *   Average of read-ahead fields context value.
- * If DEBUG_READAHEAD is defined, a snapshot of these fields is written 
+ * If DEBUG_READAHEAD is defined, a snapshot of these fields is written
  * to the syslog.
  */
 
@@ -410,7 +410,7 @@ static void profile_readahead(int async, struct file *filp)
  *
  * Synchronous read-ahead benefits:
  * --------------------------------
- * Using reasonable IO xfer length from peripheral devices increase system 
+ * Using reasonable IO xfer length from peripheral devices increase system
  * performances.
  * Reasonable means, in this context, not too large but not too small.
  * The actual maximum value is:
@@ -419,22 +419,22 @@ static void profile_readahead(int async, struct file *filp)
  *
  * Asynchronous read-ahead benefits:
  * ---------------------------------
- * Overlapping next read request and user process execution increase system 
+ * Overlapping next read request and user process execution increase system
  * performance.
  *
  * Read-ahead risks:
  * -----------------
  * We have to guess which further data are needed by the user process.
- * If these data are often not really needed, it's bad for system 
+ * If these data are often not really needed, it's bad for system
  * performances.
- * However, we know that files are often accessed sequentially by 
- * application programs and it seems that it is possible to have some good 
+ * However, we know that files are often accessed sequentially by
+ * application programs and it seems that it is possible to have some good
  * strategy in that guessing.
  * We only try to read-ahead files that seems to be read sequentially.
  *
  * Asynchronous read-ahead risks:
  * ------------------------------
- * In order to maximize overlapping, we must start some asynchronous read 
+ * In order to maximize overlapping, we must start some asynchronous read
  * request from the device, as soon as possible.
  * We must be very careful about:
  * - The number of effective pending IO read requests.
@@ -469,7 +469,7 @@ static inline unsigned long generic_file_readahead(int reada_ok, struct file * f
  * If the current position is inside the previous read IO request, do not
  * try to reread previously read ahead pages.
  * Otherwise decide or not to read ahead some pages synchronously.
- * If we are not going to read ahead, set the read ahead context for this 
+ * If we are not going to read ahead, set the read ahead context for this
  * page only.
  */
 	if (PageLocked(page)) {
@@ -498,7 +498,7 @@ static inline unsigned long generic_file_readahead(int reada_ok, struct file * f
 /*
  * Add ONE page to max_ahead in order to try to have about the same IO max size
  * as synchronous read-ahead (MAX_READAHEAD + 1)*PAGE_SIZE.
- * Compute the position of the last page we have tried to read in order to 
+ * Compute the position of the last page we have tried to read in order to
  * begin to read ahead just at the next page.
  */
 		raend -= PAGE_SIZE;
@@ -577,7 +577,7 @@ int generic_file_read(struct inode * inode, struct file * filp, char * buf, int 
 	pos = filp->f_pos;
 	ppos = pos & PAGE_MASK;
 /*
- * If the current position is outside the previous read-ahead window, 
+ * If the current position is outside the previous read-ahead window,
  * we reset the current read-ahead context and set read ahead max to zero
  * (will be set to just needed value later),
  * otherwise, we assume that the file accesses are sequential enough to
@@ -633,7 +633,7 @@ found_page:
  * Try to read ahead only if the current page is filled or being filled.
  * Otherwise, if we were reading ahead, decrease max read ahead size to
  * the minimum value.
- * In this context, that seems to may happen only on some read error or if 
+ * In this context, that seems to may happen only on some read error or if
  * the page has been rewritten.
  */
 		if (PageUptodate(page) || PageLocked(page))
@@ -660,7 +660,7 @@ success:
 
 		if (nr > inode->i_size - pos)
 			nr = inode->i_size - pos;
-		memcpy_tofs(buf, (void *) (page_address(page) + offset), nr);
+		memcpy_tofs(buf, (void *) (page_address(page) + offset), nr); // 把读到的文件内容复制到用户空间
 		release_page(page);
 		buf += nr;
 		pos += nr;
@@ -706,14 +706,14 @@ no_cached_page:
 /*
  * We have to read the page.
  * If we were reading ahead, we had previously tried to read this page,
- * That means that the page has probably been removed from the cache before 
+ * That means that the page has probably been removed from the cache before
  * the application process needs it, or has been rewritten.
  * Decrease max readahead size to the minimum value in that situation.
  */
 		if (reada_ok && filp->f_ramax > MIN_READAHEAD)
 			filp->f_ramax = MIN_READAHEAD;
 
-		error = inode->i_op->readpage(inode, page);
+		error = inode->i_op->readpage(inode, page); // 如果是minix文件系统对应的是 generic_readpage()
 		if (!error)
 			goto found_page;
 		release_page(page);
@@ -1026,7 +1026,7 @@ static inline int filemap_sync_pte(pte_t * ptep, struct vm_area_struct *vma,
 }
 
 static inline int filemap_sync_pte_range(pmd_t * pmd,
-	unsigned long address, unsigned long size, 
+	unsigned long address, unsigned long size,
 	struct vm_area_struct *vma, unsigned long offset, unsigned int flags)
 {
 	pte_t * pte;
@@ -1056,7 +1056,7 @@ static inline int filemap_sync_pte_range(pmd_t * pmd,
 }
 
 static inline int filemap_sync_pmd_range(pgd_t * pgd,
-	unsigned long address, unsigned long size, 
+	unsigned long address, unsigned long size,
 	struct vm_area_struct *vma, unsigned int flags)
 {
 	pmd_t * pmd;

@@ -165,7 +165,7 @@ int lookup(struct inode * dir,const char * name, int len,
 		if (dir == current->fs->root) {
 			*result = dir;
 			return 0;
-		} else if ((sb = dir->i_sb) && (dir == sb->s_mounted)) {
+		} else if ((sb = dir->i_sb) && (dir == sb->s_mounted)) { // 如果当前目录是挂载点, 那么先切换到原来目录inode
 			iput(dir);
 			dir = sb->s_covered;
 			if (!dir)
@@ -181,11 +181,11 @@ int lookup(struct inode * dir,const char * name, int len,
 		iput(dir);
 		return perm;
 	}
-	if (!len) {
+	if (!len) { // 如果是空文件名
 		*result = dir;
 		return 0;
 	}
-	return dir->i_op->lookup(dir, name, len, result);
+	return dir->i_op->lookup(dir, name, len, result); // 如果是minix文件系统, 那么就对应 minix_lookup()
 }
 
 int follow_link(struct inode * dir, struct inode * inode,
@@ -232,7 +232,7 @@ static int dir_namei(const char *pathname, int *namelen, const char **name,
 	}
 	while (1) {
 		thisname = pathname;
-		for(len=0;(c = *(pathname++))&&(c != '/');len++)
+		for(len=0;(c = *(pathname++))&&(c != '/');len++) // 查找目录名
 			/* nothing */ ;
 		if (!c)
 			break;
@@ -242,7 +242,7 @@ static int dir_namei(const char *pathname, int *namelen, const char **name,
 			iput(base);
 			return error;
 		}
-		error = follow_link(base,inode,0,0,&base);
+		error = follow_link(base,inode,0,0,&base); // base = inode
 		if (error)
 			return error;
 	}
@@ -373,7 +373,7 @@ int open_namei(const char * pathname, int flag, int mode,
 			dir->i_count++;		/* create eats the dir */
 			if (dir->i_sb && dir->i_sb->dq_op)
 				dir->i_sb->dq_op->initialize(dir, -1);
-			error = dir->i_op->create(dir, basename, namelen, mode, res_inode);
+			error = dir->i_op->create(dir, basename, namelen, mode, res_inode); // 对应minix文件系统的是 minix_create()
 			up(&dir->i_sem);
 			iput(dir);
 			return error;
@@ -440,7 +440,7 @@ int open_namei(const char * pathname, int flag, int mode,
 		}
 		if (inode->i_sb && inode->i_sb->dq_op)
 			inode->i_sb->dq_op->initialize(inode, -1);
-			
+
 		error = do_truncate(inode, 0);
 		put_write_access(inode);
 		if (error) {
@@ -890,7 +890,7 @@ static int do_rename(const char * oldname, const char * newname, int must_be_dir
 	if (new_dir->i_sb && new_dir->i_sb->dq_op)
 		new_dir->i_sb->dq_op->initialize(new_dir, -1);
 	down(&new_dir->i_sem);
-	error = old_dir->i_op->rename(old_dir, old_base, old_len, 
+	error = old_dir->i_op->rename(old_dir, old_base, old_len,
 		new_dir, new_base, new_len, must_be_dir);
 	up(&new_dir->i_sem);
 	iput(new_dir);

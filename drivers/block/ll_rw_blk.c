@@ -234,7 +234,7 @@ static inline void drive_stat_acct(int cmd, unsigned long nr_sectors,
 void add_request(struct blk_dev_struct * dev, struct request * req)
 {
 	struct request * tmp;
-	short		 disk_index;
+	short disk_index;
 
 	switch (MAJOR(req->rq_dev)) {
 		case SCSI_DISK_MAJOR:
@@ -302,8 +302,7 @@ static void make_request(int major,int rw, struct buffer_head * bh)
                         /* This may well happen - the kernel calls bread()
                            without checking the size of the device, e.g.,
                            when mounting a device. */
-			printk(KERN_INFO
-                               "attempt to access beyond end of device\n");
+			printk(KERN_INFO "attempt to access beyond end of device\n");
 			printk(KERN_INFO "%s: rw=%d, want=%d, limit=%d\n",
                                kdevname(bh->b_rdev), rw,
                                (sector + count)>>1,
@@ -354,62 +353,62 @@ static void make_request(int major,int rw, struct buffer_head * bh)
 	 * Try to coalesce the new request with old requests
 	 */
 	cli();
-	req = blk_dev[major].current_request;
+	req = blk_dev[major].current_request; // 如果设备还有请求没有处理完
 	if (!req) {
 		/* MD and loop can't handle plugging without deadlocking */
 		if (major != MD_MAJOR && major != LOOP_MAJOR)
 			plug_device(blk_dev + major);
 	} else switch (major) {
-	     case IDE0_MAJOR:	/* same as HD_MAJOR */
-	     case IDE1_MAJOR:
-	     case FLOPPY_MAJOR:
-	     case IDE2_MAJOR:
-	     case IDE3_MAJOR:
-		/*
-		 * The scsi disk and cdrom drivers completely remove the request
-		 * from the queue when they start processing an entry.  For this
-		 * reason it is safe to continue to add links to the top entry for
-		 * those devices.
-		 *
-		 * All other drivers need to jump over the first entry, as that
-		 * entry may be busy being processed and we thus can't change it.
-		 */
-	        req = req->next;
-		if (!req)
-			break;
-		/* fall through */
+	    case IDE0_MAJOR:	/* same as HD_MAJOR */
+	    case IDE1_MAJOR:
+	    case FLOPPY_MAJOR:
+	    case IDE2_MAJOR:
+	    case IDE3_MAJOR:
+			/*
+			* The scsi disk and cdrom drivers completely remove the request
+			* from the queue when they start processing an entry.  For this
+			* reason it is safe to continue to add links to the top entry for
+			* those devices.
+			*
+			* All other drivers need to jump over the first entry, as that
+			* entry may be busy being processed and we thus can't change it.
+			*/
+			req = req->next;
+			if (!req)
+				break;
+			/* fall through */
 
-	     case SCSI_DISK_MAJOR:
-	     case SCSI_CDROM_MAJOR:
+			case SCSI_DISK_MAJOR:
+			case SCSI_CDROM_MAJOR:
 
-		do {
-			if (req->sem)
-				continue;
-			if (req->cmd != rw)
-				continue;
-			if (req->nr_sectors >= 244)
-				continue;
-			if (req->rq_dev != bh->b_rdev)
-				continue;
-			/* Can we add it to the end of this request? */
-			if (req->sector + req->nr_sectors == sector) {
-				req->bhtail->b_reqnext = bh;
-				req->bhtail = bh;
-			/* or to the beginning? */
-			} else if (req->sector - count == sector) {
-			    	bh->b_reqnext = req->bh;
-			    	req->bh = bh;
-			    	req->buffer = bh->b_data;
-			    	req->current_nr_sectors = count;
-			    	req->sector = sector;
-			} else
-				continue;
+			do {
+				if (req->sem)
+					continue;
+				if (req->cmd != rw)
+					continue;
+				if (req->nr_sectors >= 244)
+					continue;
+				if (req->rq_dev != bh->b_rdev)
+					continue;
+				/* Can we add it to the end of this request? */
+				if (req->sector + req->nr_sectors == sector) {
+					req->bhtail->b_reqnext = bh;
+					req->bhtail = bh;
+				/* or to the beginning? */
+				} else if (req->sector - count == sector) {
+					bh->b_reqnext = req->bh;
+					req->bh = bh;
+					req->buffer = bh->b_data;
+					req->current_nr_sectors = count;
+					req->sector = sector;
+				} else
+					continue;
 
-		    	req->nr_sectors += count;
-			mark_buffer_clean(bh);
-		    	sti();
-		    	return;
-		} while ((req = req->next) != NULL);
+				req->nr_sectors += count;
+				mark_buffer_clean(bh);
+				sti();
+				return;
+			} while ((req = req->next) != NULL);
 	}
 
 /* find an unused request. */
@@ -462,8 +461,8 @@ void ll_rw_block(int rw, int nr, struct buffer_head * bh[])
 		dev = blk_dev + major;
 	if (!dev || !dev->request_fn) {
 		printk(KERN_ERR
-	"ll_rw_block: Trying to read nonexistent block-device %s (%ld)\n",
-		kdevname(bh[0]->b_dev), bh[0]->b_blocknr);
+				"ll_rw_block: Trying to read nonexistent block-device %s (%ld)\n",
+				kdevname(bh[0]->b_dev), bh[0]->b_blocknr);
 		goto sorry;
 	}
 
@@ -487,7 +486,7 @@ void ll_rw_block(int rw, int nr, struct buffer_head * bh[])
 
 		/* Md remaps blocks now */
 		bh[i]->b_rdev = bh[i]->b_dev;
-		bh[i]->b_rsector=bh[i]->b_blocknr*(bh[i]->b_size >> 9);
+		bh[i]->b_rsector = bh[i]->b_blocknr*(bh[i]->b_size >> 9);
 #ifdef CONFIG_BLK_DEV_MD
 		if (major==MD_MAJOR &&
 		    md_map (MINOR(bh[i]->b_dev), &bh[i]->b_rdev,
@@ -514,7 +513,7 @@ void ll_rw_block(int rw, int nr, struct buffer_head * bh[])
 	}
 	return;
 
-      sorry:
+sorry:
 	for (i = 0; i < nr; i++) {
 		if (bh[i]) {
 			clear_bit(BH_Dirty, &bh[i]->b_state);
@@ -570,7 +569,7 @@ void ll_rw_swap_file(int rw, kdev_t dev, unsigned int *b, int nb, char *buf)
 				return;
 			}
 #endif
-			
+
 			if (j == 0) {
 				req[j] = get_request_wait(NR_REQUEST, rdev);
 			} else {

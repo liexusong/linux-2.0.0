@@ -124,7 +124,7 @@ int minix_lookup(struct inode * dir,const char * name, int len,
 	}
 	ino = de->inode;
 	brelse(bh);
-	if (!(*result = iget(dir->i_sb,ino))) {
+	if (!(*result = iget(dir->i_sb, ino))) { // 这里有可能会切换到挂载设备的根目录
 		iput(dir);
 		return -EACCES;
 	}
@@ -219,7 +219,7 @@ int minix_create(struct inode * dir,const char * name, int len, int mode,
 	*result = NULL;
 	if (!dir)
 		return -ENOENT;
-	inode = minix_new_inode(dir);
+	inode = minix_new_inode(dir); // 创建一个新的inode
 	if (!inode) {
 		iput(dir);
 		return -ENOSPC;
@@ -703,7 +703,7 @@ start_up:
 	if (must_be_dir && !S_ISDIR(old_inode->i_mode))
 		goto end_rename;
 	retval = -EPERM;
-	if ((old_dir->i_mode & S_ISVTX) && 
+	if ((old_dir->i_mode & S_ISVTX) &&
 	    current->fsuid != old_inode->i_uid &&
 	    current->fsuid != old_dir->i_uid && !fsuser())
 		goto end_rename;
@@ -734,7 +734,7 @@ start_up:
 			goto end_rename;
 	}
 	retval = -EPERM;
-	if (new_inode && (new_dir->i_mode & S_ISVTX) && 
+	if (new_inode && (new_dir->i_mode & S_ISVTX) &&
 	    current->fsuid != new_inode->i_uid &&
 	    current->fsuid != new_dir->i_uid && !fsuser())
 		goto end_rename;

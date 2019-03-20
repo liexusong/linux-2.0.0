@@ -251,7 +251,7 @@ static void write_inode(struct inode * inode)
 		inode->i_dirt = 0;
 		return;
 	}
-	inode->i_lock = 1;	
+	inode->i_lock = 1;
 	inode->i_sb->s_op->write_inode(inode);
 	unlock_inode(inode);
 }
@@ -270,7 +270,7 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
 	/*
 	 *	If force is set do it anyway.
 	 */
-	 
+
 	if (attr->ia_valid & ATTR_FORCE)
 		return 0;
 
@@ -352,7 +352,7 @@ int notify_change(struct inode * inode, struct iattr *attr)
 	}
 
 	if (inode->i_sb && inode->i_sb->s_op  &&
-	    inode->i_sb->s_op->notify_change) 
+	    inode->i_sb->s_op->notify_change)
 		return inode->i_sb->s_op->notify_change(inode, attr);
 
 	if ((retval = inode_change_ok(inode, attr)) != 0)
@@ -455,7 +455,7 @@ repeat:
 	if (IS_WRITABLE(inode)) {
 		if (inode->i_sb && inode->i_sb->dq_op) {
 			/* Here we can sleep also. Let's do it again
-			 * Dmitry Gorodchanin 02/11/96 
+			 * Dmitry Gorodchanin 02/11/96
 			 */
 			inode->i_lock = 1;
 			inode->i_sb->dq_op->drop(inode);
@@ -463,7 +463,7 @@ repeat:
 			goto repeat;
 		}
 	}
-	
+
 	inode->i_count--;
 
 	if (inode->i_mmap) {
@@ -478,7 +478,7 @@ repeat:
 
 static inline unsigned long value(struct inode * inode)
 {
-	if (inode->i_lock)  
+	if (inode->i_lock)
 		return 1000;
 	if (inode->i_dirt)
 		return 1000;
@@ -570,6 +570,12 @@ struct inode * get_pipe_inode(void)
 	return inode;
 }
 
+//
+// 获取inode的信息
+// @param sb: inode所在的设备超级块
+// @param nr: inode号
+// @param crossmntp: 是否需要切换挂载点
+//
 struct inode *__iget(struct super_block * sb, int nr, int crossmntp)
 {
 	static struct wait_queue * update_wait = NULL;
@@ -620,7 +626,7 @@ found_it:
 		iput(inode);
 		goto repeat;
 	}
-	if (crossmntp && inode->i_mount) {
+	if (crossmntp && inode->i_mount) { // 如果当前目录是挂载点, 那么切换到挂载的设备根目录inode
 		struct inode * tmp = inode->i_mount;
 		tmp->i_count++;
 		iput(inode);

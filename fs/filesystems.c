@@ -42,6 +42,8 @@ asmlinkage int sys_setup(void)
 
 	binfmt_setup();
 
+	// 注册各种文件系统
+
 #ifdef CONFIG_EXT_FS
 	init_ext_fs();
 #endif
@@ -110,6 +112,6 @@ asmlinkage int sys_setup(void)
 	init_ufs_fs();
 #endif
 
-	mount_root();
+	mount_root();  // 挂载根目录
 	return 0;
 }

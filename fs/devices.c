@@ -2,7 +2,7 @@
  *  linux/fs/devices.c
  *
  * (C) 1993 Matthias Urlichs -- collected common code and tables.
- * 
+ *
  *  Copyright (C) 1991, 1992  Linus Torvalds
  *
  *  Added kerneld support: Jacques Gelinas and Bjorn Ekwall
@@ -74,7 +74,7 @@ static struct file_operations * get_fops(
 {
 	struct file_operations *ret = NULL;
 
-	if (major < maxdev){
+	if (major < maxdev) {
 #ifdef CONFIG_KERNELD
 		/*
 		 * I do get request for device 0. I have no idea why. It happen
@@ -88,7 +88,7 @@ static struct file_operations * get_fops(
 		 *
 		 * A. Haritsis <ah@doc.ic.ac.uk>: fix for serial module
 		 *  though we need the minor here to check if serial dev,
-		 *  we pass only the normal major char dev to kerneld 
+		 *  we pass only the normal major char dev to kerneld
 		 *  as there is no other loadable dev on these majors
 		 */
 		if ((isa_tty_dev(major) && need_serial(major,minor)) ||
@@ -110,7 +110,7 @@ static struct file_operations * get_fops(
 */
 struct file_operations * get_blkfops(unsigned int major)
 {
-	return get_fops (major,0,MAX_BLKDEV,"block-major-%d",blkdevs);
+	return get_fops(major, 0, MAX_BLKDEV, "block-major-%d", blkdevs);
 }
 
 struct file_operations * get_chrfops(unsigned int major, unsigned int minor)
@@ -227,14 +227,14 @@ int check_disk_change(kdev_t dev)
 int blkdev_open(struct inode * inode, struct file * filp)
 {
 	int ret = -ENODEV;
-	filp->f_op = get_blkfops(MAJOR(inode->i_rdev));
-	if (filp->f_op != NULL){
+	filp->f_op = get_blkfops(MAJOR(inode->i_rdev)); // 根据设备号查找相应的操作函数列表
+	if (filp->f_op != NULL) {
 		ret = 0;
 		if (filp->f_op->open != NULL)
 			ret = filp->f_op->open(inode,filp);
-	}	
+	}
 	return ret;
-}	
+}
 
 void blkdev_release(struct inode * inode)
 {

@@ -9,7 +9,7 @@
  * request-list, using interrupts to jump between functions. As
  * all the functions are called within interrupts, we may not
  * sleep. Special care is recommended.
- * 
+ *
  *  modified by Drew Eckhardt to check nr of hd's from the CMOS.
  *
  *  Thanks to Branko Lankester, lankeste@fwi.uva.nl, who found a bug
@@ -75,7 +75,7 @@ struct hd_i_struct {
 	unsigned int head,sect,cyl,wpcom,lzone,ctl;
 	};
 static struct hd_driveid *hd_ident_info[MAX_HD] = {0, };
-	
+
 #ifdef HD_TYPE
 static struct hd_i_struct hd_info[] = { HD_TYPE };
 struct hd_i_struct bios_info[] = { HD_TYPE };
@@ -301,13 +301,13 @@ static void identify_intr(void)
 			/*
 			 * Extract the physical drive geometry for our use.
 			 * Note that we purposely do *not* update the bios_info.
-			 * This way, programs that use it (like fdisk) will 
+			 * This way, programs that use it (like fdisk) will
 			 * still have the same logical view as the BIOS does,
 			 * which keeps the partition table from being screwed.
 			 */
 			hd_info[dev].cyl  = id->cur_cyls;
 			hd_info[dev].head = id->cur_heads;
-			hd_info[dev].sect = id->cur_sectors; 
+			hd_info[dev].sect = id->cur_sectors;
 		}
 		fixstring (id->serial_no, sizeof(id->serial_no));
 		fixstring (id->fw_rev, sizeof(id->fw_rev));
@@ -917,7 +917,7 @@ static void hd_release(struct inode * inode, struct file * file)
 static void hd_geninit(struct gendisk *);
 
 static struct gendisk hd_gendisk = {
-	MAJOR_NR,	/* Major number */	
+	MAJOR_NR,	/* Major number */
 	"hd",		/* Major name */
 	6,		/* Bits to shift to get real from partition */
 	1 << 6,		/* Number of partitions per real */
@@ -929,7 +929,7 @@ static struct gendisk hd_gendisk = {
 	(void *) bios_info,	/* internal */
 	NULL		/* next */
 };
-	
+
 static void hd_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	void (*handler)(void) = DEVICE_INTR;
@@ -976,25 +976,25 @@ static void hd_geninit(struct gendisk *ignored)
 		}
 
 	/*
-		We query CMOS about hard disks : it could be that 
+		We query CMOS about hard disks : it could be that
 		we have a SCSI/ESDI/etc controller that is BIOS
 		compatible with ST-506, and thus showing up in our
 		BIOS table, but not register compatible, and therefore
 		not present in CMOS.
 
 		Furthermore, we will assume that our ST-506 drives
-		<if any> are the primary drives in the system, and 
+		<if any> are the primary drives in the system, and
 		the ones reflected as drive 1 or 2.
 
 		The first drive is stored in the high nibble of CMOS
 		byte 0x12, the second in the low nibble.  This will be
-		either a 4 bit drive type or 0xf indicating use byte 0x19 
+		either a 4 bit drive type or 0xf indicating use byte 0x19
 		for an 8 bit type, drive 1, 0x1a for drive 2 in CMOS.
 
-		Needless to say, a non-zero value means we have 
+		Needless to say, a non-zero value means we have
 		an AT controller hard disk for that drive.
 
-		
+
 	*/
 
 		if ((cmos_disks = CMOS_READ(0x12)) & 0xf0)
@@ -1037,7 +1037,7 @@ static void hd_geninit(struct gendisk *ignored)
 static struct file_operations hd_fops = {
 	NULL,			/* lseek - default */
 	block_read,		/* read - general block-dev read */
-	block_write,		/* write - general block-dev write */
+	block_write,	/* write - general block-dev write */
 	NULL,			/* readdir - bad */
 	NULL,			/* select */
 	hd_ioctl,		/* ioctl */

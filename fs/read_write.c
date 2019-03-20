@@ -100,7 +100,7 @@ asmlinkage int sys_llseek(unsigned int fd, unsigned long offset_high,
 	return 0;
 }
 
-asmlinkage int sys_read(unsigned int fd,char * buf,int count)
+asmlinkage int sys_read(unsigned int fd, char * buf, int count)
 {
 	int error;
 	struct file * file;
@@ -129,7 +129,7 @@ asmlinkage int sys_write(unsigned int fd,char * buf,unsigned int count)
 	struct file * file;
 	struct inode * inode;
 	int written;
-	
+
 	if (fd>=NR_OPEN || !(file=current->files->fd[fd]) || !(inode=file->f_inode))
 		return -EBADF;
 	if (!(file->f_mode & 2))
@@ -245,7 +245,7 @@ static int do_readv_writev(int type, struct inode * inode, struct file * file,
 	/* VERIFY_WRITE actually means a read, as we write to user space */
 	fn = file->f_op->read;
 	if (type == VERIFY_READ)
-		fn = (IO_fn_t) file->f_op->write;		
+		fn = (IO_fn_t) file->f_op->write;
 	vector = iov;
 	while (count > 0) {
 		void * base;

@@ -9,7 +9,7 @@
  *                                   - umount systemcall
  *
  *  Added options to /proc/mounts
- *  Torbj�rn Lindh (torbjorn.lindh@gopta.se), April 14, 1996.
+ *  Torbj�rn Lindh (torbjorn.lindh@gopta.se), April 14, 1996.
  *
  * GK 2/5/95  -  Changed to support mounting the root fs via NFS
  *
@@ -39,7 +39,7 @@
 #ifdef CONFIG_KERNELD
 #include <linux/kerneld.h>
 #endif
- 
+
 #include <linux/nfs_fs.h>
 #include <linux/nfs_fs_sb.h>
 #include <linux/nfs_mount.h>
@@ -61,7 +61,7 @@ static struct vfsmount *vfsmntlist = (struct vfsmount *) NULL,
                        *vfsmnttail = (struct vfsmount *) NULL,
                        *mru_vfsmnt = (struct vfsmount *) NULL;
 
-/* 
+/*
  * This part handles the management of the list of mounted filesystems.
  */
 struct vfsmount *lookup_vfsmnt(kdev_t dev)
@@ -93,7 +93,7 @@ struct vfsmount *add_vfsmnt(kdev_t dev, const char *dev_name, const char *dir_na
 	char *tmp;
 
 	lptr = (struct vfsmount *)kmalloc(sizeof(struct vfsmount), GFP_KERNEL);
-        if (!lptr)
+	if (!lptr)
 		return NULL;
 	memset(lptr, 0, sizeof(struct vfsmount));
 
@@ -151,22 +151,25 @@ void remove_vfsmnt(kdev_t dev)
 	kfree_s(tofree, sizeof(struct vfsmount));
 }
 
+//
+// 这个函数把fs添加到内核的file_systems链表中
+//
 int register_filesystem(struct file_system_type * fs)
 {
-        struct file_system_type ** tmp;
+	struct file_system_type ** tmp;
 
-        if (!fs)
-                return -EINVAL;
-        if (fs->next)
-                return -EBUSY;
-        tmp = &file_systems;
-        while (*tmp) {
-                if (strcmp((*tmp)->name, fs->name) == 0)
-                        return -EBUSY;
-                tmp = &(*tmp)->next;
-        }
-        *tmp = fs;
-        return 0;
+	if (!fs)
+		return -EINVAL;
+	if (fs->next)
+		return -EBUSY;
+	tmp = &file_systems;
+	while (*tmp) {
+		if (strcmp((*tmp)->name, fs->name) == 0)
+			return -EBUSY;
+		tmp = &(*tmp)->next;
+	}
+	*tmp = fs;
+	return 0;
 }
 
 #ifdef CONFIG_MODULES
@@ -240,7 +243,7 @@ static int fs_maxindex(void)
 }
 
 /*
- * Whee.. Weird sysv syscall. 
+ * Whee.. Weird sysv syscall.
  */
 asmlinkage int sys_sysfs(int option, ...)
 {
@@ -380,7 +383,7 @@ int get_filesystem_list(char * buf)
 struct file_system_type *get_fs_type(const char *name)
 {
 	struct file_system_type * fs = file_systems;
-	
+
 	if (!name)
 		return fs;
 	for (fs = file_systems; fs && strcmp(fs->name, name); fs = fs->next)
@@ -569,7 +572,7 @@ static int do_umount(kdev_t dev,int unmount_root)
 {
 	struct super_block * sb;
 	int retval;
-	
+
 	if (dev==ROOT_DEV && !unmount_root) {
 		/*
 		 * Special case for "unmounting" root. We just try to remount
@@ -701,7 +704,7 @@ int do_mount(kdev_t dev, const char * dev_name, const char * dir_name, const cha
 	if (!(flags & MS_RDONLY) && dev && is_read_only(dev))
 		return -EACCES;
 		/*flags |= MS_RDONLY;*/
-	error = namei(dir_name, &dir_i);
+	error = namei(dir_name, &dir_i); // 获取挂载目录的inode
 	if (error)
 		return error;
 	if (dir_i->i_count != 1 || dir_i->i_mount) {
@@ -716,7 +719,7 @@ int do_mount(kdev_t dev, const char * dev_name, const char * dir_name, const cha
 		iput(dir_i);
 		return -EBUSY;
 	}
-	sb = read_super(dev,type,flags,data,0);
+	sb = read_super(dev, type, flags, data, 0); // 读取挂载设备的超级块
 	if (!sb) {
 		iput(dir_i);
 		return -EINVAL;
@@ -730,7 +733,7 @@ int do_mount(kdev_t dev, const char * dev_name, const char * dir_name, const cha
 		vfsmnt->mnt_sb = sb;
 		vfsmnt->mnt_flags = flags;
 	}
-	sb->s_covered = dir_i;
+	sb->s_covered = dir_i; // 当路径有".."时会检查是否要转换到挂载之前的目录inode
 	dir_i->i_mount = sb->s_mounted;
 	return 0;		/* we don't iput(dir_i) - see umount */
 }
@@ -746,7 +749,7 @@ static int do_remount_sb(struct super_block *sb, int flags, char *data)
 {
 	int retval;
 	struct vfsmount *vfsmnt;
-	
+
 	if (!(flags & MS_RDONLY) && sb->s_dev && is_read_only(sb->s_dev))
 		return -EACCES;
 		/*flags |= MS_RDONLY;*/
@@ -854,12 +857,12 @@ asmlinkage int sys_mount(char * dev_name, char * dir_name, char * type,
 		return retval;
 	fstype = get_fs_type((char *) page);
 	free_page(page);
-	if (!fstype)		
+	if (!fstype)
 		return -ENODEV;
 	t = fstype->name;
 	fops = NULL;
 	if (fstype->requires_dev) {
-		retval = namei(dev_name, &inode);
+		retval = namei(dev_name, &inode); // 获取设备文件的inode
 		if (retval)
 			return retval;
 		if (!S_ISBLK(inode->i_mode)) {
@@ -870,12 +873,12 @@ asmlinkage int sys_mount(char * dev_name, char * dir_name, char * type,
 			iput(inode);
 			return -EACCES;
 		}
-		dev = inode->i_rdev;
+		dev = inode->i_rdev; // 获取设备号
 		if (MAJOR(dev) >= MAX_BLKDEV) {
 			iput(inode);
 			return -ENXIO;
 		}
-		fops = get_blkfops(MAJOR(dev));
+		fops = get_blkfops(MAJOR(dev)); // 如果是硬盘, 那么这个就是: hd_fops
 		if (!fops) {
 			iput(inode);
 			return -ENOTBLK;
@@ -885,13 +888,12 @@ asmlinkage int sys_mount(char * dev_name, char * dir_name, char * type,
 			memset(&dummy, 0, sizeof(dummy));
 			dummy.f_inode = inode;
 			dummy.f_mode = (new_flags & MS_RDONLY) ? 1 : 3;
-			retval = fops->open(inode, &dummy);
+			retval = fops->open(inode, &dummy); // 对于硬盘, 调用的就是 hd_open()
 			if (retval) {
 				iput(inode);
 				return retval;
 			}
 		}
-
 	} else {
 		if (!(dev = get_unnamed_dev()))
 			return -EMFILE;
@@ -906,7 +908,7 @@ asmlinkage int sys_mount(char * dev_name, char * dir_name, char * type,
 			return retval;
 		}
 	}
-	retval = do_mount(dev,dev_name,dir_name,t,flags,(void *) page);
+	retval = do_mount(dev, dev_name, dir_name, t, flags, (void *) page);
 	free_page(page);
 	if (retval && fops && fops->release)
 		fops->release(inode, NULL);
@@ -922,8 +924,8 @@ static void do_mount_root(void)
 	struct inode * inode, d_inode;
 	struct file filp;
 	int retval;
-  
-#ifdef CONFIG_ROOT_NFS
+
+#ifdef CONFIG_ROOT_NFS // 如果配置了nfs启动
 	if (MAJOR(ROOT_DEV) == UNNAMED_MAJOR)
 		if (nfs_root_init(nfs_root_name, nfs_root_addrs) < 0) {
 			printk(KERN_ERR "Root-NFS: Unable to contact NFS "
@@ -951,7 +953,7 @@ static void do_mount_root(void)
 				vfsmnt = add_vfsmnt(ROOT_DEV, "rootfs", "/");
 				if (!vfsmnt)
 					panic("VFS: add_vfsmnt failed for NFS root.\n");
-				vfsmnt->mnt_sb = sb;
+				vfsmnt->mnt_sb = sb; // 设置挂载点的超级块
 				vfsmnt->mnt_flags = sb->s_flags;
 				return;
 			}
@@ -974,7 +976,8 @@ static void do_mount_root(void)
 
 	memset(&filp, 0, sizeof(filp));
 	memset(&d_inode, 0, sizeof(d_inode));
-	d_inode.i_rdev = ROOT_DEV;
+
+	d_inode.i_rdev = ROOT_DEV; // ROOT_DEV是在启动时配置的
 	filp.f_inode = &d_inode;
 	if ( root_mountflags & MS_RDONLY)
 		filp.f_mode = 1; /* read only */
@@ -993,24 +996,24 @@ static void do_mount_root(void)
 		 */
 		printk("VFS: Cannot open root device %s\n",
 		       kdevname(ROOT_DEV));
-	else for (fs_type = file_systems ; fs_type ; fs_type = fs_type->next) {
+	else for (fs_type = file_systems ; fs_type ; fs_type = fs_type->next) { // 遍历所有文件系统, 尝试读入根目录的超级块
   		if (!fs_type->requires_dev)
   			continue;
-  		sb = read_super(ROOT_DEV,fs_type->name,root_mountflags,NULL,1);
+  		sb = read_super(ROOT_DEV, fs_type->name, root_mountflags, NULL, 1);
 		if (sb) {
 			inode = sb->s_mounted;
 			inode->i_count += 3 ;	/* NOTE! it is logically used 4 times, not 1 */
 			sb->s_covered = inode;
 			sb->s_flags = root_mountflags;
-			current->fs->pwd = inode;
-			current->fs->root = inode;
+			current->fs->pwd = inode;  // 设置工作目录的inode
+			current->fs->root = inode; // 设置根目录的inode
 			printk ("VFS: Mounted root (%s filesystem)%s.\n",
 				fs_type->name,
 				(sb->s_flags & MS_RDONLY) ? " readonly" : "");
 			vfsmnt = add_vfsmnt(ROOT_DEV, "rootfs", "/");
 			if (!vfsmnt)
 				panic("VFS: add_vfsmnt failed for root fs");
-			vfsmnt->mnt_sb = sb;
+			vfsmnt->mnt_sb = sb; // 设置根目录超级块
 			vfsmnt->mnt_flags = root_mountflags;
 			return;
 		}

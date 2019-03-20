@@ -511,7 +511,7 @@ int do_open(const char * filename,int flags,int mode)
 		flag++;
 	if (flag & O_TRUNC)
 		flag |= 2;
-	error = open_namei(filename,flag,mode,&inode,NULL);
+	error = open_namei(filename,flag,mode,&inode,NULL); // 获取文件的inode
 	if (error)
 		goto cleanup_file;
 	if (f->f_mode & FMODE_WRITE) {
@@ -538,7 +538,7 @@ int do_open(const char * filename,int flags,int mode)
 	 * an incomplete fd to other processes which may share
 	 * the same file table with us.
 	 */
-	for(fd = 0; fd < NR_OPEN && fd < current->rlim[RLIMIT_NOFILE].rlim_cur; fd++) {
+	for (fd = 0; fd < NR_OPEN && fd < current->rlim[RLIMIT_NOFILE].rlim_cur; fd++) {
 		if (!current->files->fd[fd]) {
 			current->files->fd[fd] = f;
 			FD_CLR(fd,&current->files->close_on_exec);
@@ -610,7 +610,7 @@ int close_fp(struct file *filp)
 }
 
 asmlinkage int sys_close(unsigned int fd)
-{	
+{
 	struct file * filp;
 
 	if (fd >= NR_OPEN)

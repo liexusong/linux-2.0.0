@@ -915,7 +915,7 @@ static int init(void * unused)
 	if (initrd_start && mount_initrd) root_mountflags &= ~MS_RDONLY;
 	else mount_initrd =0;
 #endif
-	setup();
+	setup(); // 调用sys_setup()系统调用(在文件fs/filesystems.c中)
 
 #ifdef __SMP__
 	/*
