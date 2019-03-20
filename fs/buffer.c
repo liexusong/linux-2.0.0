@@ -2065,7 +2065,7 @@ int bdflush(void * unused)
 				  for (i = nr_buffers_type[nlist]; i-- > 0 && ndirty < bdf_prm.b_un.ndirty;
 				       bh = next) {
 					  /* We may have stalled while waiting for I/O to complete. */
-					  if(bh->b_list != nlist) goto repeat;
+					  if (bh->b_list != nlist) goto repeat;
 					  next = bh->b_next_free;
 					  if(!lru_list[nlist]) {
 						  printk("Dirty list empty %d\n", i);

@@ -221,10 +221,10 @@ static int dir_namei(const char *pathname, int *namelen, const char **name,
 
 	*res_inode = NULL;
 	if (!base) {
-		base = current->fs->pwd;
+		base = current->fs->pwd; // 当前工作目录
 		base->i_count++;
 	}
-	if ((c = *pathname) == '/') {
+	if ((c = *pathname) == '/') { // 如果是绝对路径, 那么就使用根目录
 		iput(base);
 		base = current->fs->root;
 		pathname++;
@@ -338,10 +338,10 @@ int open_namei(const char * pathname, int flag, int mode,
 
 	mode &= S_IALLUGO & ~current->fs->umask;
 	mode |= S_IFREG;
-	error = dir_namei(pathname, &namelen, &basename, base, &dir);
+	error = dir_namei(pathname, &namelen, &basename, base, &dir); // 获取到最后一个目录的inode, 并返回文件名到basename中
 	if (error)
 		return error;
-	if (!namelen) {			/* special case: '/usr/' etc */
+	if (!namelen) {			/* special case: '/usr/' etc */ // 如果没有文件名
 		if (flag & 2) {
 			iput(dir);
 			return -EISDIR;
@@ -502,7 +502,11 @@ asmlinkage int sys_mknod(const char * filename, int mode, dev_t dev)
 	case 0:
 		mode |= S_IFREG;
 		break;
-	case S_IFREG: case S_IFCHR: case S_IFBLK: case S_IFIFO: case S_IFSOCK:
+	case S_IFREG:
+	case S_IFCHR:
+	case S_IFBLK:
+	case S_IFIFO:
+	case S_IFSOCK:
 		break;
 	default:
 		return -EINVAL;

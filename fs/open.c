@@ -511,7 +511,7 @@ int do_open(const char * filename,int flags,int mode)
 		flag++;
 	if (flag & O_TRUNC)
 		flag |= 2;
-	error = open_namei(filename,flag,mode,&inode,NULL); // 获取文件的inode
+	error = open_namei(filename,flag,mode,&inode,NULL); // 获取文件的inode(如果设置了O_CREAT标志, 那么会创建一个新的inode)
 	if (error)
 		goto cleanup_file;
 	if (f->f_mode & FMODE_WRITE) {
@@ -525,7 +525,7 @@ int do_open(const char * filename,int flags,int mode)
 	f->f_reada = 0;
 	f->f_op = NULL;
 	if (inode->i_op)
-		f->f_op = inode->i_op->default_file_ops;
+		f->f_op = inode->i_op->default_file_ops; // 把文件操作列表复制到file结构中
 	if (f->f_op && f->f_op->open) {
 		error = f->f_op->open(inode,f);
 		if (error)
