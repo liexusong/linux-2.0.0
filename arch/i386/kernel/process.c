@@ -74,7 +74,7 @@ static void hard_idle(void)
 			__asm__("hlt");
 #endif
 	        }
- 		if (need_resched) 
+ 		if (need_resched)
  			break;
 		schedule();
 	}
@@ -86,7 +86,7 @@ static void hard_idle(void)
 /*
  * The idle loop on a uniprocessor i386..
  */
- 
+
 asmlinkage int sys_idle(void)
 {
         unsigned long start_idle = 0;
@@ -95,25 +95,25 @@ asmlinkage int sys_idle(void)
 		return -EPERM;
 	/* endless idle loop with no priority at all */
 	current->counter = -100;
-	for (;;) 
+	for (;;)
 	{
 		/*
 		 *	We are locked at this point. So we can safely call
 		 *	the APM bios knowing only one CPU at a time will do
 		 *	so.
 		 */
-		if (!start_idle) 
+		if (!start_idle)
 			start_idle = jiffies;
-		if (jiffies - start_idle > HARD_IDLE_TIMEOUT) 
+		if (jiffies - start_idle > HARD_IDLE_TIMEOUT)
 		{
 			hard_idle();
-		} 
-		else 
+		}
+		else
 		{
 			if (hlt_works_ok && !hlt_counter && !need_resched)
 		        	__asm__("hlt");
 		}
-		if (need_resched) 
+		if (need_resched)
 			start_idle = 0;
 		schedule();
 	}
@@ -125,7 +125,7 @@ asmlinkage int sys_idle(void)
  *	In the SMP world we hlt outside of kernel syscall rather than within
  *	so as to get the right locking semantics.
  */
- 
+
 asmlinkage int sys_idle(void)
 {
 	if(current->pid != 0)
@@ -149,7 +149,7 @@ int cpu_idle(void *unused)
 	{
 		if(cpu_data[smp_processor_id()].hlt_works_ok && !hlt_counter && !need_resched)
 			__asm("hlt");
-                if(0==(0x7fffffff & smp_process_available)) 
+                if(0==(0x7fffffff & smp_process_available))
                 	continue;
                 while(0x80000000 & smp_process_available);
 	        cli();
@@ -261,7 +261,7 @@ void flush_thread(void)
 					     FIRST_LDT_ENTRY,&default_ldt, 1);
 				load_ldt(i);
 			}
-		}	
+		}
 	}
 
 	for (i=0 ; i<8 ; i++)
@@ -370,7 +370,7 @@ void dump_thread(struct pt_regs * regs, struct user * dump)
 	dump->u_dsize -= dump->u_tsize;
 	dump->u_ssize = 0;
 	for (i = 0; i < 8; i++)
-		dump->u_debugreg[i] = current->debugreg[i];  
+		dump->u_debugreg[i] = current->debugreg[i];
 
 	if (dump->start_stack < TASK_SIZE)
 		dump->u_ssize = ((unsigned long) (TASK_SIZE - dump->start_stack)) >> PAGE_SHIFT;
@@ -405,10 +405,10 @@ asmlinkage int sys_execve(struct pt_regs regs)
 	int error;
 	char * filename;
 
-	error = getname((char *) regs.ebx, &filename);
+	error = getname((char *) regs.ebx, &filename); // 从用户空间复制文件名到内核空间
 	if (error)
 		return error;
-	error = do_execve(filename, (char **) regs.ecx, (char **) regs.edx, &regs);
+	error = do_execve(filename, (char **) regs.ecx, (char **) regs.edx, &regs); // 调用 do_execve()
 	putname(filename);
 	return error;
 }

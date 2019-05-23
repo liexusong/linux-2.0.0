@@ -1,2 +1,1 @@
-sys_setup();
-sys_open();
+sys_execve();
