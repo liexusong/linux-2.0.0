@@ -56,9 +56,9 @@
 				 */
 
 #define TCP_TIMEOUT_LEN	(15*60*HZ) /* should be about 15 mins		*/
-#define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to successfully 
+#define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to successfully
 				  * close the socket, about 60 seconds	*/
-#define TCP_FIN_TIMEOUT (3*60*HZ) /* BSD style FIN_WAIT2 deadlock breaker */				  
+#define TCP_FIN_TIMEOUT (3*60*HZ) /* BSD style FIN_WAIT2 deadlock breaker */
 #define TCP_ACK_TIME	(3*HZ)	/* time to delay before sending an ACK	*/
 #define TCP_DONE_TIME	(5*HZ/2)/* maximum time to wait before actually
 				 * destroying a socket			*/
@@ -78,7 +78,7 @@
 /*
  *	TCP option
  */
- 
+
 #define TCPOPT_NOP		1	/* Padding */
 #define TCPOPT_EOL		0	/* End of options */
 #define TCPOPT_MSS		2	/* Segment size negotiating */
@@ -96,12 +96,12 @@
 
 extern __inline int before(__u32 seq1, __u32 seq2)
 {
-        return (__s32)(seq1-seq2) < 0;
+	return (__s32)(seq1 - seq2) < 0; // seq1 < seq2 ? 1 : 0
 }
 
 extern __inline int after(__u32 seq1, __u32 seq2)
 {
-	return (__s32)(seq2-seq1) < 0;
+	return (__s32)(seq2 - seq1) < 0; // seq2 < seq1 ? 1 : 0
 }
 
 
@@ -143,7 +143,7 @@ extern void tcp_write_xmit(struct sock *);
 extern void tcp_time_wait(struct sock *);
 extern void tcp_retransmit(struct sock *, int);
 extern void tcp_do_retransmit(struct sock *, int);
-extern void tcp_send_check(struct tcphdr *th, unsigned long saddr, 
+extern void tcp_send_check(struct tcphdr *th, unsigned long saddr,
 		unsigned long daddr, int len, struct sk_buff *skb);
 
 /* tcp_output.c */
@@ -267,7 +267,7 @@ static __inline__ void tcp_set_state(struct sock *sk, int state)
 #ifdef STATE_TRACE
 	if(sk->debug)
 		printk("TCP sk=%p, State %s -> %s\n",sk, statename[oldstate],statename[state]);
-#endif	
+#endif
 
 	switch (state) {
 	case TCP_ESTABLISHED:

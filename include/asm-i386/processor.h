@@ -21,7 +21,7 @@ extern char x86_vendor_id[13];
 extern char x86_model;		/* lower 4 bits */
 extern char x86_mask;		/* lower 4 bits */
 extern int  x86_capability;	/* field of flags */
-extern int  fdiv_bug;		
+extern int  fdiv_bug;
 extern char ignore_irq13;
 extern char wp_works_ok;	/* doesn't work on a 386 */
 extern char hlt_works_ok;	/* problems on some 486Dx4's and old 386's */
@@ -39,7 +39,7 @@ extern int EISA_bus;
  * User space process size: 3GB. This is hardcoded into a few places,
  * so don't change it unless you know what you are doing.
  */
-#define TASK_SIZE	(0xC0000000UL)
+#define TASK_SIZE	(0xC0000000UL) // 3GB开始
 
 /*
  * Size of io_bitmap in longwords: 32 is ports 0-0x3ff.

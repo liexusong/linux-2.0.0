@@ -6,7 +6,7 @@
  *		The options processing module for ip.c
  *
  * Authors:	A.N.Kuznetsov
- *		
+ *
  */
 
 #include <linux/types.h>
@@ -18,7 +18,7 @@
 #include <net/ip.h>
 #include <net/icmp.h>
 
-/* 
+/*
  * Write options to IP header, record destination address to
  * source route option, address of outgoing interface
  * (we should already know it, so that this  function is allowed be
@@ -28,7 +28,7 @@
 
 void ip_options_build(struct sk_buff * skb, struct options * opt,
 			    __u32 daddr, __u32 saddr,
-			    int is_frag) 
+			    int is_frag)
 {
 	unsigned char * iph = (unsigned char*)skb->ip_hdr;
 
@@ -40,13 +40,13 @@ void ip_options_build(struct sk_buff * skb, struct options * opt,
 	if (opt->srr)
 		memcpy(iph+opt->srr+iph[opt->srr+1]-4, &daddr, 4);
 
-	if (!is_frag) 
+	if (!is_frag)
 	{
 		if (opt->rr_needaddr)
 			memcpy(iph+opt->rr+iph[opt->rr+2]-5, &saddr, 4);
 		if (opt->ts_needaddr)
 			memcpy(iph+opt->ts+iph[opt->ts+2]-9, &saddr, 4);
-		if (opt->ts_needtime) 
+		if (opt->ts_needtime)
 		{
 			struct timeval tv;
 			__u32 midtime;
@@ -56,13 +56,13 @@ void ip_options_build(struct sk_buff * skb, struct options * opt,
 		}
 		return;
 	}
-	if (opt->rr) 
+	if (opt->rr)
 	{
 		memset(iph+opt->rr, IPOPT_NOP, iph[opt->rr+1]);
 		opt->rr = 0;
 		opt->rr_needaddr = 0;
 	}
-	if (opt->ts) 
+	if (opt->ts)
 	{
 		memset(iph+opt->ts, IPOPT_NOP, iph[opt->ts+1]);
 		opt->ts = 0;
@@ -72,7 +72,7 @@ void ip_options_build(struct sk_buff * skb, struct options * opt,
 
 int ip_options_echo(struct options * dopt, struct options * sopt,
 		     __u32 daddr, __u32 saddr,
-		     struct sk_buff * skb) 
+		     struct sk_buff * skb)
 {
 	unsigned char *sptr, *dptr;
 	int soffset, doffset;
@@ -85,7 +85,7 @@ int ip_options_echo(struct options * dopt, struct options * sopt,
 	if (!sopt)
 		sopt = (struct options*)skb->proto_priv;
 
-	if (sopt->optlen == 0) 
+	if (sopt->optlen == 0)
 	{
 		dopt->optlen = 0;
 		return 0;
@@ -95,7 +95,7 @@ int ip_options_echo(struct options * dopt, struct options * sopt,
 		(unsigned char *)skb->ip_hdr);
 	dptr = dopt->__data;
 
-	if (sopt->rr) 
+	if (sopt->rr)
 	{
 		optlen  = sptr[sopt->rr+1];
 		soffset = sptr[sopt->rr+2];
@@ -110,33 +110,33 @@ int ip_options_echo(struct options * dopt, struct options * sopt,
 		dptr 	 += optlen;
 		dopt->optlen += optlen;
 	}
-	if (sopt->ts) 
+	if (sopt->ts)
 	{
 		optlen = sptr[sopt->ts+1];
 		soffset = sptr[sopt->ts+2];
 		dopt->ts = dopt->optlen + sizeof(struct iphdr);
 		memcpy(dptr, sptr+sopt->ts, optlen);
-		if (soffset <= optlen) 
+		if (soffset <= optlen)
 		{
-			if (sopt->ts_needaddr) 
+			if (sopt->ts_needaddr)
 			{
 				if (soffset + 3 > optlen)
 					return -EINVAL;
 				dopt->ts_needaddr = 1;
 				soffset += 4;
 			}
-			if (sopt->ts_needtime) 
+			if (sopt->ts_needtime)
 			{
 				if (soffset + 3 > optlen)
 					return -EINVAL;
 				dopt->ts_needtime = 1;
 				soffset += 4;
 			}
-			if (((struct timestamp*)(dptr+1))->flags == IPOPT_TS_PRESPEC) 
+			if (((struct timestamp*)(dptr+1))->flags == IPOPT_TS_PRESPEC)
 			{
 				__u32 addr;
 				memcpy(&addr, sptr+soffset-9, 4);
-				if (ip_chk_addr(addr) == 0) 
+				if (ip_chk_addr(addr) == 0)
 				{
 					dopt->ts_needtime = 0;
 					dopt->ts_needaddr = 0;
@@ -148,7 +148,7 @@ int ip_options_echo(struct options * dopt, struct options * sopt,
 		dptr += optlen;
 		dopt->optlen += optlen;
 	}
-	if (sopt->srr) 
+	if (sopt->srr)
 	{
 		unsigned char * start = sptr+sopt->srr;
 		__u32 faddr;
@@ -159,7 +159,7 @@ int ip_options_echo(struct options * dopt, struct options * sopt,
 		if (soffset > optlen)
 			soffset = optlen + 1;
 		soffset -= 4;
-		if (soffset > 3) 
+		if (soffset > 3)
 		{
 			memcpy(&faddr, &start[soffset-1], 4);
 			for (soffset-=4, doffset=4; soffset > 3; soffset-=4, doffset+=4)
@@ -170,7 +170,7 @@ int ip_options_echo(struct options * dopt, struct options * sopt,
 			if (memcmp(&saddr, &start[soffset+3], 4) == 0)
 				doffset -= 4;
 		}
-		if (doffset > 3) 
+		if (doffset > 3)
 		{
 			memcpy(&start[doffset-1], &daddr, 4);
 			dopt->faddr = faddr;
@@ -183,7 +183,7 @@ int ip_options_echo(struct options * dopt, struct options * sopt,
 			dopt->is_strictroute = sopt->is_strictroute;
 		}
 	}
-	while (dopt->optlen & 3) 
+	while (dopt->optlen & 3)
 	{
 		*dptr++ = IPOPT_END;
 		dopt->optlen++;
@@ -191,20 +191,20 @@ int ip_options_echo(struct options * dopt, struct options * sopt,
 	return 0;
 }
 
-void ip_options_fragment(struct sk_buff * skb) 
+void ip_options_fragment(struct sk_buff * skb)
 {
 	unsigned char * optptr = (unsigned char*)skb->ip_hdr;
 	struct options * opt = (struct options*)skb->proto_priv;
 	int  l = opt->optlen;
 	int  optlen;
 
-	while (l > 0) 
+	while (l > 0)
 	{
-		switch (*optptr) 
+		switch (*optptr)
 		{
-		      case IPOPT_END:
+		case IPOPT_END:
 			return;
-		      case IPOPT_NOOP:
+		case IPOPT_NOOP:
 			l--;
 			optptr++;
 			continue;
@@ -239,7 +239,7 @@ int ip_options_compile(struct options * opt, struct sk_buff * skb)
 	int optlen;
 	unsigned char * pp_ptr = NULL;
 
-	if (!opt) 
+	if (!opt)
 	{
 		opt = (struct options*)skb->proto_priv;
 		memset(opt, 0, sizeof(struct options));
@@ -248,27 +248,27 @@ int ip_options_compile(struct options * opt, struct sk_buff * skb)
 		optptr = iph + sizeof(struct iphdr);
 		opt->is_data = 0;
 	}
-	else 
+	else
 	{
 		optptr = opt->is_data ? opt->__data : (unsigned char*)&skb->ip_hdr[1];
 		iph = optptr - sizeof(struct iphdr);
 	}
 
-	for (l = opt->optlen; l > 0; ) 
+	for (l = opt->optlen; l > 0; )
 	{
-		switch (*optptr) 
+		switch (*optptr)
 		{
-		      case IPOPT_END:
-			for (optptr++, l--; l>0; l--) 
+			case IPOPT_END:
+			for (optptr++, l--; l>0; l--)
 			{
-				if (*optptr != IPOPT_END) 
+				if (*optptr != IPOPT_END)
 				{
 					*optptr = IPOPT_END;
 					opt->is_changed = 1;
 				}
 			}
 			goto eol;
-		      case IPOPT_NOOP:
+			case IPOPT_NOOP:
 			l--;
 			optptr++;
 			continue;
@@ -279,29 +279,29 @@ int ip_options_compile(struct options * opt, struct sk_buff * skb)
 			pp_ptr = optptr;
 			goto error;
 		}
-		switch (*optptr) 
+		switch (*optptr)
 		{
-		      case IPOPT_SSRR:
-		      case IPOPT_LSRR:
-			if (optlen < 3) 
+		case IPOPT_SSRR:
+		case IPOPT_LSRR:
+			if (optlen < 3)
 			{
 				pp_ptr = optptr + 1;
 				goto error;
 			}
-			if (optptr[2] < 4) 
+			if (optptr[2] < 4)
 			{
 				pp_ptr = optptr + 2;
 				goto error;
 			}
 			/* NB: cf RFC-1812 5.2.4.1 */
-			if (opt->srr) 
+			if (opt->srr)
 			{
 				pp_ptr = optptr;
 				goto error;
 			}
-			if (!skb) 
+			if (!skb)
 			{
-				if (optptr[2] != 4 || optlen < 7 || ((optlen-3) & 3)) 
+				if (optptr[2] != 4 || optlen < 7 || ((optlen-3) & 3))
 				{
 					pp_ptr = optptr + 1;
 					goto error;
@@ -313,30 +313,30 @@ int ip_options_compile(struct options * opt, struct sk_buff * skb)
 			opt->is_strictroute = (optptr[0] == IPOPT_SSRR);
 			opt->srr = optptr - iph;
 			break;
-		      case IPOPT_RR:
-			if (opt->rr) 
+		case IPOPT_RR:
+			if (opt->rr)
 			{
 				pp_ptr = optptr;
 				goto error;
 			}
-			if (optlen < 3) 
+			if (optlen < 3)
 			{
 				pp_ptr = optptr + 1;
 				goto error;
 			}
-			if (optptr[2] < 4) 
+			if (optptr[2] < 4)
 			{
 				pp_ptr = optptr + 2;
 				goto error;
 			}
-			if (optptr[2] <= optlen) 
+			if (optptr[2] <= optlen)
 			{
-				if (optptr[2]+3 > optlen) 
+				if (optptr[2]+3 > optlen)
 				{
 					pp_ptr = optptr + 2;
 					goto error;
 				}
-				if (skb) 
+				if (skb)
 				{
 					memcpy(&optptr[optptr[2]-1], &skb->dev->pa_addr, 4);
 					opt->is_changed = 1;
@@ -346,48 +346,48 @@ int ip_options_compile(struct options * opt, struct sk_buff * skb)
 			}
 			opt->rr = optptr - iph;
 			break;
-		      case IPOPT_TIMESTAMP:
-			if (opt->ts) 
+		case IPOPT_TIMESTAMP:
+			if (opt->ts)
 			{
 				pp_ptr = optptr;
 				goto error;
 			}
-			if (optlen < 4) 
+			if (optlen < 4)
 			{
 				pp_ptr = optptr + 1;
 				goto error;
 			}
-			if (optptr[2] < 5) 
+			if (optptr[2] < 5)
 			{
 				pp_ptr = optptr + 2;
 				goto error;
 			}
-			if (optptr[2] <= optlen) 
+			if (optptr[2] <= optlen)
 			{
 				struct timestamp * ts = (struct timestamp*)(optptr+1);
 				__u32 * timeptr = NULL;
-				if (ts->ptr+3 > ts->len) 
+				if (ts->ptr+3 > ts->len)
 				{
 					pp_ptr = optptr + 2;
 					goto error;
 				}
-				switch (ts->flags) 
+				switch (ts->flags)
 				{
-				      case IPOPT_TS_TSONLY:
+				case IPOPT_TS_TSONLY:
 					opt->ts = optptr - iph;
-					if (skb) 
+					if (skb)
 						timeptr = (__u32*)&optptr[ts->ptr-1];
 					opt->ts_needtime = 1;
 					ts->ptr += 4;
 					break;
-				      case IPOPT_TS_TSANDADDR:
-					if (ts->ptr+7 > ts->len) 
+				case IPOPT_TS_TSANDADDR:
+					if (ts->ptr+7 > ts->len)
 					{
 						pp_ptr = optptr + 2;
 						goto error;
 					}
 					opt->ts = optptr - iph;
-					if (skb) 
+					if (skb)
 					{
 						memcpy(&optptr[ts->ptr-1], &skb->dev->pa_addr, 4);
 						timeptr = (__u32*)&optptr[ts->ptr+3];
@@ -396,8 +396,8 @@ int ip_options_compile(struct options * opt, struct sk_buff * skb)
 					opt->ts_needtime = 1;
 					ts->ptr += 8;
 					break;
-				      case IPOPT_TS_PRESPEC:
-					if (ts->ptr+7 > ts->len) 
+				case IPOPT_TS_PRESPEC:
+					if (ts->ptr+7 > ts->len)
 					{
 						pp_ptr = optptr + 2;
 						goto error;
@@ -415,11 +415,11 @@ int ip_options_compile(struct options * opt, struct sk_buff * skb)
 					opt->ts_needtime = 1;
 					ts->ptr += 8;
 					break;
-				      default:
+				default:
 					pp_ptr = optptr + 3;
 					goto error;
 				}
-				if (timeptr) 
+				if (timeptr)
 				{
 					struct timeval tv;
 					__u32  midtime;
@@ -428,27 +428,27 @@ int ip_options_compile(struct options * opt, struct sk_buff * skb)
 					memcpy(timeptr, &midtime, sizeof(__u32));
 					opt->is_changed = 1;
 				}
-			} 
-			else 
+			}
+			else
 			{
 				struct timestamp * ts = (struct timestamp*)(optptr+1);
-				if (ts->overflow == 15) 
+				if (ts->overflow == 15)
 				{
 					pp_ptr = optptr + 3;
 					goto error;
 				}
 				opt->ts = optptr - iph;
-				if (skb) 
+				if (skb)
 				{
 					ts->overflow++;
 					opt->is_changed = 1;
 				}
 			}
 			break;
-		      case IPOPT_SEC:
-		      case IPOPT_SID:
-		      default:
-			if (!skb) 
+		case IPOPT_SEC:
+		case IPOPT_SID:
+		default:
+			if (!skb)
 			{
 				pp_ptr = optptr;
 				goto error;
@@ -464,7 +464,7 @@ eol:
 		return 0;
 
 error:
-	if (skb) 
+	if (skb)
 	{
 		icmp_send(skb, ICMP_PARAMETERPROB, 0, pp_ptr-iph, skb->dev);
 		kfree_skb(skb, FREE_READ);

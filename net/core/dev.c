@@ -96,13 +96,13 @@ struct packet_type *ptype_all = NULL;		/* Taps */
 /*
  *	Device list lock
  */
- 
+
 int dev_lockct=0;
- 
+
 /*
  *	Our notifier list
  */
- 
+
 struct notifier_block *netdev_chain=NULL;
 
 /*
@@ -112,16 +112,16 @@ struct notifier_block *netdev_chain=NULL;
 
 static struct sk_buff_head backlog;
 
-/* 
+/*
  *	We don't overdo the queue or we will thrash memory badly.
  */
- 
+
 static int backlog_size = 0;
 
 /*
- *	Return the lesser of the two values. 
+ *	Return the lesser of the two values.
  */
- 
+
 static __inline__ unsigned long min(unsigned long a, unsigned long b)
 {
 	return (a < b)? a : b;
@@ -138,26 +138,24 @@ static __inline__ unsigned long min(unsigned long a, unsigned long b)
  *	For efficiency
  */
 
-static int dev_nit=0;
+static int dev_nit = 0;
 
 /*
  *	Add a protocol ID to the list. Now that the input handler is
  *	smarter we can dispense with all the messy stuff that used to be
  *	here.
  */
- 
+// 添加网络层协议处理函数
 void dev_add_pack(struct packet_type *pt)
 {
 	int hash;
-	if(pt->type==htons(ETH_P_ALL))
-	{
+
+	if(pt->type == htons(ETH_P_ALL)) {
 		dev_nit++;
-		pt->next=ptype_all;
-		ptype_all=pt;
-	}
-	else
-	{	
-		hash=ntohs(pt->type)&15;
+		pt->next = ptype_all;
+		ptype_all = pt;
+	} else {
+		hash = ntohs(pt->type)&15;
 		pt->next = ptype_base[hash];
 		ptype_base[hash] = pt;
 	}
@@ -167,7 +165,7 @@ void dev_add_pack(struct packet_type *pt)
 /*
  *	Remove a protocol ID from the list.
  */
- 
+
 void dev_remove_pack(struct packet_type *pt)
 {
 	struct packet_type **pt1;
@@ -195,26 +193,26 @@ void dev_remove_pack(struct packet_type *pt)
 
 ******************************************************************************************/
 
-/* 
+/*
  *	Find an interface by name.
  */
- 
+
 struct device *dev_get(const char *name)
 {
 	struct device *dev;
 
-	for (dev = dev_base; dev != NULL; dev = dev->next) 
+	for (dev = dev_base; dev != NULL; dev = dev->next)
 	{
 		if (strcmp(dev->name, name) == 0)
 			return(dev);
 	}
 	return NULL;
 }
-	
+
 /*
  *	Find and possibly load an interface.
  */
- 
+
 #ifdef CONFIG_KERNELD
 
 extern __inline__ void dev_load(const char *name)
@@ -222,7 +220,7 @@ extern __inline__ void dev_load(const char *name)
 	if(!dev_get(name)) {
 #ifdef CONFIG_NET_ALIAS
 		const char *sptr;
- 
+
 		for (sptr=name ; *sptr ; sptr++) if(*sptr==':') break;
 		if (!(*sptr && *(sptr+1)))
 #endif
@@ -231,11 +229,11 @@ extern __inline__ void dev_load(const char *name)
 }
 
 #endif
- 
+
 /*
- *	Prepare an interface for use. 
+ *	Prepare an interface for use.
  */
- 
+
 int dev_open(struct device *dev)
 {
 	int ret = -ENODEV;
@@ -243,18 +241,18 @@ int dev_open(struct device *dev)
 	/*
 	 *	Call device private open method
 	 */
-	if (dev->open) 
+	if (dev->open)
   		ret = dev->open(dev);
 
 	/*
 	 *	If it went open OK then set the flags
 	 */
-	 
-	if (ret == 0) 
+
+	if (ret == 0)
 	{
 		dev->flags |= (IFF_UP | IFF_RUNNING);
 		/*
-		 *	Initialise multicasting status 
+		 *	Initialise multicasting status
 		 */
 		dev_mc_upload(dev);
 		notifier_call_chain(&netdev_chain, NETDEV_UP, dev);
@@ -266,7 +264,7 @@ int dev_open(struct device *dev)
 /*
  *	Completely shutdown an interface.
  */
- 
+
 int dev_close(struct device *dev)
 {
 	int ct=0;
@@ -275,14 +273,14 @@ int dev_close(struct device *dev)
 	 *	Call the device specific close. This cannot fail.
 	 *	Only if device is UP
 	 */
-	 
+
 	if ((dev->flags & IFF_UP) && dev->stop)
 		dev->stop(dev);
 
 	/*
 	 *	Device is now down.
 	 */
-	 
+
 	dev->flags&=~(IFF_UP|IFF_RUNNING);
 
 	/*
@@ -295,7 +293,7 @@ int dev_close(struct device *dev)
 	dev_mc_discard(dev);
 
 	/*
-	 *	Purge any queued packets when we down the link 
+	 *	Purge any queued packets when we down the link
 	 */
 	while(ct<DEV_NUMBUFFS)
 	{
@@ -325,7 +323,7 @@ int unregister_netdevice_notifier(struct notifier_block *nb)
 }
 
 /*
- *	Send (or queue for sending) a packet. 
+ *	Send (or queue for sending) a packet.
  *
  *	IMPORTANT: When this is called to resend frames. The caller MUST
  *	already have locked the sk_buff. Apart from that we do the
@@ -342,9 +340,9 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 
 	if(pri>=0 && !skb_device_locked(skb))
 		skb_device_lock(skb);	/* Shove a lock on the frame */
-#if CONFIG_SKB_CHECK 
+#if CONFIG_SKB_CHECK
 	IS_SKB(skb);
-#endif    
+#endif
 	skb->dev = dev;
 
 	/*
@@ -352,15 +350,15 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 	 *	queue front as a retransmit attempt. It therefore goes back on the queue
 	 *	start on a failure.
 	 */
-	 
-  	if (pri < 0) 
+
+  	if (pri < 0)
   	{
 		pri = -pri-1;
 		retransmission = 1;
   	}
 
 #ifdef CONFIG_NET_DEBUG
-	if (pri >= DEV_NUMBUFFS) 
+	if (pri >= DEV_NUMBUFFS)
 	{
 		printk(KERN_WARNING "bad priority in dev_queue_xmit.\n");
 		pri = 1;
@@ -371,7 +369,7 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 	 *	If the address has not been resolved. Call the device header rebuilder.
 	 *	This can cover all protocols and technically not just ARP either.
 	 */
-	 
+
 	if (!skb->arp && dev->rebuild_header(skb->data, dev, skb->raddr, skb)) {
 		return;
 	}
@@ -395,7 +393,7 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 	 */
 
 #ifdef CONFIG_BRIDGE
-	if(skb->pkt_bridged!=IS_BRIDGED && br_stats.flags & BR_UP)
+	if(skb->pkt_bridged != IS_BRIDGED && br_stats.flags & BR_UP)
 	{
 		if(br_tx_frame(skb))
 			return;
@@ -419,7 +417,7 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 		if (dev_nit) {
 			struct packet_type *ptype;
 			skb->stamp=xtime;
-			for (ptype = ptype_all; ptype!=NULL; ptype = ptype->next) 
+			for (ptype = ptype_all; ptype!=NULL; ptype = ptype->next)
 			{
 				/* Never send packets back to the socket
 				 * they originated from - MvS (miquels@drinkel.ow.org)
@@ -459,7 +457,7 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 	 */
 	cli();
 	skb_device_unlock(skb);
-	__skb_queue_head(list,skb);
+	__skb_queue_head(list, skb);
 	restore_flags(flags);
 }
 
@@ -472,7 +470,7 @@ void dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 
 /*
  *	Receive a packet from a device driver and queue it for the upper
- *	(protocol) levels.  It always succeeds. This is the recommended 
+ *	(protocol) levels.  It always succeeds. This is the recommended
  *	interface to use.
  */
 
@@ -500,21 +498,20 @@ void netif_rx(struct sk_buff *skb)
 	else if (backlog_size > 300)
 		dropping = 1;
 
-	if (dropping) 
-	{
+	if (dropping) {
 		kfree_skb(skb, FREE_READ);
 		return;
 	}
 
 	/*
-	 *	Add it to the "backlog" queue. 
+	 *	Add it to the "backlog" queue.
 	 */
 #if CONFIG_SKB_CHECK
 	IS_SKB(skb);
-#endif	
-	skb_queue_tail(&backlog,skb);
+#endif
+	skb_queue_tail(&backlog, skb); // 把 skb 放到 backlog 队列中, 让中断下半部处理这些数据
 	backlog_size++;
-  
+
 	/*
 	 *	If any packet arrived, mark it for processing after the
 	 *	hardware interrupt returns.
@@ -525,9 +522,9 @@ void netif_rx(struct sk_buff *skb)
 }
 
 /*
- *	This routine causes all interfaces to try to send some data. 
+ *	This routine causes all interfaces to try to send some data.
  */
- 
+
 static void dev_transmit(void)
 {
 	struct device *dev;
@@ -547,7 +544,7 @@ static void dev_transmit(void)
 /**********************************************************************************
 
 			Receive Queue Processor
-			
+
 ***********************************************************************************/
 
 /*
@@ -557,7 +554,7 @@ static void dev_transmit(void)
  *	This is run as a bottom half after an interrupt handler that does
  *	mark_bh(NET_BH);
  */
- 
+
 void net_bh(void)
 {
 	struct packet_type *ptype;
@@ -572,7 +569,7 @@ void net_bh(void)
 	 */
 
 	dev_transmit();
-  
+
 	/*
 	 *	Any data left to process. This may occur because a
 	 *	mark_bh() is done after we empty the queue including
@@ -587,7 +584,7 @@ void net_bh(void)
 	 *	disabling interrupts.
 	 */
 
-	while (!skb_queue_empty(&backlog)) {
+	while (!skb_queue_empty(&backlog)) { // 如果 backlog 队列不为空...
 		struct sk_buff * skb = backlog.next;
 
 		/*
@@ -597,7 +594,7 @@ void net_bh(void)
 		__skb_unlink(skb, &backlog);
   		backlog_size--;
 		sti();
-		
+
 
 #ifdef CONFIG_BRIDGE
 
@@ -605,62 +602,59 @@ void net_bh(void)
 		 *	If we are bridging then pass the frame up to the
 		 *	bridging code. If it is bridged then move on
 		 */
-		 
-		if (br_stats.flags & BR_UP)
-		{
+
+		if (br_stats.flags & BR_UP) {
 			/*
 			 *	We pass the bridge a complete frame. This means
 			 *	recovering the MAC header first.
 			 */
-			 
-			int offset=skb->data-skb->mac.raw;
+
+			int offset = skb->data - skb->mac.raw;
 			cli();
-			skb_push(skb,offset);	/* Put header back on for bridge */
-			if(br_receive_frame(skb))
+			skb_push(skb, offset);	/* Put header back on for bridge */
+			if (br_receive_frame(skb))
 				continue;
 			/*
 			 *	Pull the MAC header off for the copy going to
 			 *	the upper layers.
 			 */
-			skb_pull(skb,offset);
+			skb_pull(skb, offset);
 			sti();
 		}
 #endif
-		
+
 		/*
 	 	 *	Bump the pointer to the next structure.
-		 * 
+		 *
 		 *	On entry to the protocol layer. skb->data and
 		 *	skb->h.raw point to the MAC and encapsulated data
 		 */
 
-		skb->h.raw = skb->data;
+		skb->h.raw = skb->data; // 设置上层协议头部
 
 		/*
-		 * 	Fetch the packet protocol ID. 
+		 * 	Fetch the packet protocol ID.
 		 */
-		
-		type = skb->protocol;
+
+		type = skb->protocol; // 网络层协议类型
 
 		/*
 		 *	We got a packet ID.  Now loop over the "known protocols"
 		 * 	list. There are two lists. The ptype_all list of taps (normally empty)
 		 *	and the main protocol list which is hashed perfectly for normal protocols.
 		 */
-		
+
 		pt_prev = NULL;
-		for (ptype = ptype_all; ptype!=NULL; ptype=ptype->next)
-		{
-			if(pt_prev)
-			{
-				struct sk_buff *skb2=skb_clone(skb, GFP_ATOMIC);
+		for (ptype = ptype_all; ptype != NULL; ptype = ptype->next) {
+			if(pt_prev) {
+				struct sk_buff *skb2 = skb_clone(skb, GFP_ATOMIC);
 				if(skb2)
 					pt_prev->func(skb2,skb->dev, pt_prev);
 			}
 			pt_prev=ptype;
 		}
-		
-		for (ptype = ptype_base[ntohs(type)&15]; ptype != NULL; ptype = ptype->next) 
+
+		for (ptype = ptype_base[ntohs(type)&15]; ptype != NULL; ptype = ptype->next)
 		{
 			if (ptype->type == type && (!ptype->dev || ptype->dev==skb->dev))
 			{
@@ -672,7 +666,7 @@ void net_bh(void)
 				{
 					struct sk_buff *skb2;
 
-					skb2=skb_clone(skb, GFP_ATOMIC);
+					skb2 = skb_clone(skb, GFP_ATOMIC);
 
 					/*
 					 *	Kick the protocol handler. This should be fast
@@ -683,41 +677,41 @@ void net_bh(void)
 						pt_prev->func(skb2, skb->dev, pt_prev);
 				}
 				/* Remember the current last to do */
-				pt_prev=ptype;
+				pt_prev = ptype;
 			}
 		} /* End of protocol list loop */
-		
+
 		/*
 		 *	Is there a last item to send to ?
 		 */
 
 		if(pt_prev)
-			pt_prev->func(skb, skb->dev, pt_prev);
+			pt_prev->func(skb, skb->dev, pt_prev); // 如果是 IP 协议, 那么调用的是 ip_rcv()
 		/*
 		 * 	Has an unknown packet has been received ?
 		 */
-	 
+
 		else
 			kfree_skb(skb, FREE_WRITE);
 		/*
-		 *	Again, see if we can transmit anything now. 
+		 *	Again, see if we can transmit anything now.
 		 *	[Ought to take this out judging by tests it slows
 		 *	 us down not speeds us up]
 		 */
 #ifdef XMIT_EVERY
 		dev_transmit();
-#endif		
+#endif
   	}	/* End of queue loop */
-  	
+
   	/*
   	 *	We have emptied the queue
   	 */
-	
+
 	/*
 	 *	One last output flush.
 	 */
 
-#ifdef XMIT_AFTER	 
+#ifdef XMIT_AFTER
 	dev_transmit();
 #endif
 }
@@ -727,13 +721,13 @@ void net_bh(void)
  *	This routine is called when an device driver (i.e. an
  *	interface) is ready to transmit a packet.
  */
- 
+
 void dev_tint(struct device *dev)
 {
 	int i;
 	unsigned long flags;
 	struct sk_buff_head * head;
-	
+
 	/*
 	 * aliases do not transmit (for now :) )
 	 */
@@ -747,7 +741,7 @@ void dev_tint(struct device *dev)
 
 	/*
 	 *	Work the queues in priority order
-	 */	 
+	 */
 	for(i = 0;i < DEV_NUMBUFFS; i++,head++)
 	{
 
@@ -794,9 +788,9 @@ static int dev_ifconf(char *arg)
 	int err;
 
 	/*
-	 *	Fetch the caller's info block. 
+	 *	Fetch the caller's info block.
 	 */
-	 
+
 	err=verify_area(VERIFY_WRITE, arg, sizeof(struct ifconf));
 	if(err)
 	  	return err;
@@ -808,24 +802,24 @@ static int dev_ifconf(char *arg)
 	 *	We now walk the device list filling each active device
 	 *	into the array.
 	 */
-	 
+
 	err=verify_area(VERIFY_WRITE,pos,len);
 	if(err)
 	  	return err;
-  	
+
 	/*
-	 *	Loop over the interfaces, and write an info block for each. 
+	 *	Loop over the interfaces, and write an info block for each.
 	 */
 
-	for (dev = dev_base; dev != NULL; dev = dev->next) 
+	for (dev = dev_base; dev != NULL; dev = dev->next)
 	{
 		if(!(dev->flags & IFF_UP))	/* Downed devices don't count */
 			continue;
 		/*
 		 *	Have we run out of space here ?
 		 */
-	
-		if (len < sizeof(struct ifreq)) 
+
+		if (len < sizeof(struct ifreq))
 			break;
 
 		memset(&ifr, 0, sizeof(struct ifreq));
@@ -835,26 +829,26 @@ static int dev_ifconf(char *arg)
 
 
 		/*
-		 *	Write this block to the caller's space. 
+		 *	Write this block to the caller's space.
 		 */
-		 
+
 		memcpy_tofs(pos, &ifr, sizeof(struct ifreq));
 		pos += sizeof(struct ifreq);
-		len -= sizeof(struct ifreq);		
+		len -= sizeof(struct ifreq);
   	}
 
 	/*
-	 *	All done.  Write the updated control block back to the caller. 
+	 *	All done.  Write the updated control block back to the caller.
 	 */
-	 
+
 	ifc.ifc_len = (pos - ifc.ifc_buf);
 	ifc.ifc_req = (struct ifreq *) ifc.ifc_buf;
 	memcpy_tofs(arg, &ifc, sizeof(struct ifconf));
-	
+
 	/*
 	 *	Report how much was filled in
 	 */
-	 
+
 	return(pos - arg);
 }
 
@@ -869,7 +863,7 @@ static int sprintf_stats(char *buffer, struct device *dev)
 {
 	struct enet_statistics *stats = (dev->get_stats ? dev->get_stats(dev): NULL);
 	int size;
-	
+
 	if (stats)
 		size = sprintf(buffer, "%6s:%7d %4d %4d %4d %4d %8d %4d %4d %4d %5d %4d\n",
 		   dev->name,
@@ -892,30 +886,30 @@ static int sprintf_stats(char *buffer, struct device *dev)
  *	Called from the PROCfs module. This now uses the new arbitrary sized /proc/net interface
  *	to create /proc/net/dev
  */
- 
+
 int dev_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 {
 	int len=0;
 	off_t begin=0;
 	off_t pos=0;
 	int size;
-	
+
 	struct device *dev;
 
 
 	size = sprintf(buffer, "Inter-|   Receive                  |  Transmit\n"
 			    " face |packets errs drop fifo frame|packets errs drop fifo colls carrier\n");
-	
+
 	pos+=size;
 	len+=size;
-	
 
-	for (dev = dev_base; dev != NULL; dev = dev->next) 
+
+	for (dev = dev_base; dev != NULL; dev = dev->next)
 	{
 		size = sprintf_stats(buffer+len, dev);
 		len+=size;
 		pos=begin+len;
-				
+
 		if(pos<offset)
 		{
 			len=0;
@@ -924,7 +918,7 @@ int dev_get_info(char *buffer, char **start, off_t offset, int length, int dummy
 		if(pos>offset+length)
 			break;
 	}
-	
+
 	*start=buffer+(offset-begin);	/* Start of wanted data */
 	len-=(offset-begin);		/* Start slop */
 	if(len>length)
@@ -937,7 +931,7 @@ int dev_get_info(char *buffer, char **start, off_t offset, int length, int dummy
 /*
  *	This checks bitmasks for the ioctl calls for devices.
  */
- 
+
 static inline int bad_mask(unsigned long mask, unsigned long addr)
 {
 	if (addr & (mask = ~mask))
@@ -949,12 +943,12 @@ static inline int bad_mask(unsigned long mask, unsigned long addr)
 }
 
 /*
- *	Perform the SIOCxIFxxx calls. 
+ *	Perform the SIOCxIFxxx calls.
  *
  *	The socket layer has seen an ioctl the address family thinks is
  *	for the device. At this point we get invoked to make a decision
  */
- 
+
 static int dev_ifsioc(void *arg, unsigned int getset)
 {
 	struct ifreq ifr;
@@ -968,32 +962,32 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 	int err=verify_area(VERIFY_WRITE, arg, sizeof(struct ifreq));
 	if(err)
 		return err;
-	
+
 	memcpy_fromfs(&ifr, arg, sizeof(struct ifreq));
 
 	/*
-	 *	See which interface the caller is talking about. 
+	 *	See which interface the caller is talking about.
 	 */
-	 
+
 	/*
 	 *
 	 *	net_alias_dev_get(): dev_get() with added alias naming magic.
 	 *	only allow alias creation/deletion if (getset==SIOCSIFADDR)
 	 *
 	 */
-	 
+
 #ifdef CONFIG_KERNELD
 	dev_load(ifr.ifr_name);
-#endif	
+#endif
 
 #ifdef CONFIG_NET_ALIAS
 	if ((dev = net_alias_dev_get(ifr.ifr_name, getset == SIOCSIFADDR, &err, NULL, NULL)) == NULL)
 		return(err);
 #else
-	if ((dev = dev_get(ifr.ifr_name)) == NULL) 	
+	if ((dev = dev_get(ifr.ifr_name)) == NULL)
 		return(-ENODEV);
 #endif
-	switch(getset) 
+	switch(getset)
 	{
 		case SIOCGIFFLAGS:	/* Get interface flags */
 			ifr.ifr_flags = dev->flags;
@@ -1002,18 +996,18 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 		case SIOCSIFFLAGS:	/* Set interface flags */
 			{
 				int old_flags = dev->flags;
-				
+
 				/*
 				 *	We are not allowed to potentially close/unload
 				 *	a device until we get this lock.
 				 */
-				
+
 				dev_lock_wait();
-				
+
 				/*
 				 *	Set the flags on our device.
 				 */
-				 
+
 				dev->flags = (ifr.ifr_flags & (
 					IFF_BROADCAST | IFF_DEBUG | IFF_LOOPBACK |
 					IFF_POINTOPOINT | IFF_NOTRAILERS | IFF_RUNNING |
@@ -1021,7 +1015,7 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 					| IFF_MULTICAST)) | (dev->flags & IFF_UP);
 				/*
 				 *	Load in the correct multicast list now the flags have changed.
-				 */				
+				 */
 
 				dev_mc_upload(dev);
 
@@ -1030,33 +1024,33 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 			  	 *	according to user attempts to set it, rather than blindly
 			  	 *	setting it.
 			  	 */
-			  	 
+
 			  	if ((old_flags^ifr.ifr_flags)&IFF_UP)	/* Bit is different  ? */
 			  	{
 					if(old_flags&IFF_UP)		/* Gone down */
-						ret=dev_close(dev); 		
+						ret=dev_close(dev);
 					else				/* Come up */
 					{
 						ret=dev_open(dev);
 						if(ret<0)
 							dev->flags&=~IFF_UP;	/* Open failed */
-					}	
+					}
 			  	}
 			  	else
 			  		ret=0;
 				/*
 				 *	Load in the correct multicast list now the flags have changed.
-				 */				
+				 */
 
 				dev_mc_upload(dev);
 			}
 			break;
-		
+
 		case SIOCGIFADDR:	/* Get interface address (and family) */
 			if(ifr.ifr_addr.sa_family==AF_UNSPEC)
 			{
 				memcpy(ifr.ifr_hwaddr.sa_data,dev->dev_addr, MAX_ADDR_LEN);
-				ifr.ifr_hwaddr.sa_family=dev->type;			
+				ifr.ifr_hwaddr.sa_family=dev->type;
 				goto rarok;
 			}
 			else
@@ -1069,14 +1063,14 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 					  &ifr.ifr_addr).sin_port = 0;
 			}
 			goto rarok;
-	
+
 		case SIOCSIFADDR:	/* Set interface address (and family) */
-		
+
 			/*
 			 *	BSDism. SIOCSIFADDR family=AF_UNSPEC sets the
 			 *	physical address. We can cope with this now.
 			 */
-			
+
 			if(ifr.ifr_addr.sa_family==AF_UNSPEC)
 			{
 				if(dev->set_mac_address==NULL)
@@ -1108,13 +1102,13 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 #endif
 				dev->pa_addr = new_pa_addr;
 				dev->family = new_family;
-			
-#ifdef CONFIG_INET	
+
+#ifdef CONFIG_INET
 				/* This is naughty. When net-032e comes out It wants moving into the net032
-				   code not the kernel. Till then it can sit here (SIGH) */		
+				   code not the kernel. Till then it can sit here (SIGH) */
 				if (!dev->pa_mask)
 					dev->pa_mask = ip_get_mask(dev->pa_addr);
-#endif			
+#endif
 				if (!dev->pa_brdaddr)
 					dev->pa_brdaddr = dev->pa_addr | ~dev->pa_mask;
 				if (dev->flags & IFF_UP)
@@ -1122,7 +1116,7 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 				ret = 0;
 			}
 			break;
-			
+
 		case SIOCGIFBRDADDR:	/* Get the broadcast address */
 			(*(struct sockaddr_in *)
 				&ifr.ifr_broadaddr).sin_addr.s_addr = dev->pa_brdaddr;
@@ -1137,7 +1131,7 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 				&ifr.ifr_broadaddr).sin_addr.s_addr;
 			ret = 0;
 			break;
-			
+
 		case SIOCGIFDSTADDR:	/* Get the destination address (for point-to-point links) */
 			(*(struct sockaddr_in *)
 				&ifr.ifr_dstaddr).sin_addr.s_addr = dev->pa_dstaddr;
@@ -1146,13 +1140,13 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 			(*(struct sockaddr_in *)
 				&ifr.ifr_dstaddr).sin_port = 0;
 			goto rarok;
-	
+
 		case SIOCSIFDSTADDR:	/* Set the destination address (for point-to-point links) */
 			dev->pa_dstaddr = (*(struct sockaddr_in *)
 				&ifr.ifr_dstaddr).sin_addr.s_addr;
 			ret = 0;
 			break;
-			
+
 		case SIOCGIFNETMASK:	/* Get the netmask for the interface */
 			(*(struct sockaddr_in *)
 				&ifr.ifr_netmask).sin_addr.s_addr = dev->pa_mask;
@@ -1176,27 +1170,27 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 				ret = 0;
 			}
 			break;
-			
+
 		case SIOCGIFMETRIC:	/* Get the metric on the interface (currently unused) */
-			
+
 			ifr.ifr_metric = dev->metric;
 			goto  rarok;
-			
+
 		case SIOCSIFMETRIC:	/* Set the metric on the interface (currently unused) */
 			dev->metric = ifr.ifr_metric;
 			ret=0;
 			break;
-	
+
 		case SIOCGIFMTU:	/* Get the MTU of a device */
 			ifr.ifr_mtu = dev->mtu;
 			goto rarok;
-	
+
 		case SIOCSIFMTU:	/* Set the MTU of a device */
-		
+
 			/*
 			 *	MTU must be positive.
 			 */
-			 
+
 			if(ifr.ifr_mtu<68)
 				return -EINVAL;
 
@@ -1208,21 +1202,21 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 				ret = 0;
 			}
 			break;
-	
+
 		case SIOCGIFMEM:	/* Get the per device memory space. We can add this but currently
 					   do not support it */
 			ret = -EINVAL;
 			break;
-		
+
 		case SIOCSIFMEM:	/* Set the per device memory buffer space. Not applicable in our case */
 			ret = -EINVAL;
 			break;
 
 		case SIOCGIFHWADDR:
 			memcpy(ifr.ifr_hwaddr.sa_data,dev->dev_addr, MAX_ADDR_LEN);
-			ifr.ifr_hwaddr.sa_family=dev->type;			
+			ifr.ifr_hwaddr.sa_family=dev->type;
 			goto rarok;
-				
+
 		case SIOCSIFHWADDR:
 			if(dev->set_mac_address==NULL)
 				return -EOPNOTSUPP;
@@ -1230,7 +1224,7 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 				return -EINVAL;
 			ret=dev->set_mac_address(dev,&ifr.ifr_hwaddr);
 			break;
-			
+
 		case SIOCGIFMAP:
 			ifr.ifr_map.mem_start=dev->mem_start;
 			ifr.ifr_map.mem_end=dev->mem_end;
@@ -1239,12 +1233,12 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 			ifr.ifr_map.dma=dev->dma;
 			ifr.ifr_map.port=dev->if_port;
 			goto rarok;
-			
+
 		case SIOCSIFMAP:
 			if(dev->set_config==NULL)
 				return -EOPNOTSUPP;
 			return dev->set_config(dev,&ifr.ifr_map);
-			
+
 		case SIOCADDMULTI:
 			if(dev->set_multicast_list==NULL)
 				return -EINVAL;
@@ -1273,7 +1267,7 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 				memcpy_tofs(arg,&ifr,sizeof(struct ifreq));
 				break;
 			}
-			
+
 			ret = -EINVAL;
 	}
 	return(ret);
@@ -1293,7 +1287,7 @@ rarok:
 
 int dev_ioctl(unsigned int cmd, void *arg)
 {
-	switch(cmd) 
+	switch(cmd)
 	{
 		case SIOCGIFCONF:
 			(void) dev_ifconf((char *) arg);
@@ -1302,7 +1296,7 @@ int dev_ioctl(unsigned int cmd, void *arg)
 		/*
 		 *	Ioctl calls that can be done by all.
 		 */
-		 
+
 		case SIOCGIFFLAGS:
 		case SIOCGIFADDR:
 		case SIOCGIFDSTADDR:
@@ -1320,7 +1314,7 @@ int dev_ioctl(unsigned int cmd, void *arg)
 		/*
 		 *	Ioctl calls requiring the power of a superuser
 		 */
-		 
+
 		case SIOCSIFFLAGS:
 		case SIOCSIFADDR:
 		case SIOCSIFDSTADDR:
@@ -1336,14 +1330,14 @@ int dev_ioctl(unsigned int cmd, void *arg)
 			if (!suser())
 				return -EPERM;
 			return dev_ifsioc(arg, cmd);
-	
+
 		case SIOCSIFLINK:
 			return -EINVAL;
 
 		/*
 		 *	Unknown or private ioctl.
-		 */	
-		 
+		 */
+
 		default:
 			if((cmd >= SIOCDEVPRIVATE) &&
 			   (cmd <= (SIOCDEVPRIVATE + 15))) {
@@ -1356,7 +1350,7 @@ int dev_ioctl(unsigned int cmd, void *arg)
 
 /*
  *	Initialize the DEV module. At boot time this walks the device list and
- *	unhooks any devices that fail to initialise (normally hardware not 
+ *	unhooks any devices that fail to initialise (normally hardware not
  *	present) and leaves us with a valid list of present and active devices.
  *
  */
@@ -1373,17 +1367,17 @@ int net_dev_init(void)
 	/*
 	 *	Initialise the packet receive queue.
 	 */
-	 
+
 	skb_queue_head_init(&backlog);
-	
+
 	/*
 	 *	The bridge has to be up before the devices
 	 */
 
-#ifdef CONFIG_BRIDGE	 
+#ifdef CONFIG_BRIDGE
 	br_init();
-#endif	
-	
+#endif
+
 	/*
 	 * This is Very Ugly(tm).
 	 *
@@ -1397,7 +1391,7 @@ int net_dev_init(void)
 #endif
 #if defined(CONFIG_PI)
 	pi_init();
-#endif	
+#endif
 #if defined(CONFIG_PT)
 	pt_init();
 #endif
@@ -1415,7 +1409,7 @@ int net_dev_init(void)
 	 || defined(CONFIG_PPP) \
     || (defined(CONFIG_ISDN) && defined(CONFIG_ISDN_PPP))
 	slhc_install();
-#endif	
+#endif
 
 	/*
 	 *	Add the devices.
@@ -1432,13 +1426,13 @@ int net_dev_init(void)
 			skb_queue_head_init(dev->buffs + i);
 		}
 
-		if (dev->init && dev->init(dev)) 
+		if (dev->init && dev->init(dev))
 		{
 			/*
 			 *	It failed to come up. Unhook it.
 			 */
 			*dp = dev->next;
-		} 
+		}
 		else
 		{
 			dp = &dev->next;
@@ -1454,8 +1448,8 @@ int net_dev_init(void)
 	});
 #endif
 
-	/*	
-	 *	Initialise net_alias engine 
+	/*
+	 *	Initialise net_alias engine
 	 *
 	 *		- register net_alias device notifier
 	 *		- register proc entries:	/proc/net/alias_types

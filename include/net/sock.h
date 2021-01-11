@@ -66,7 +66,7 @@
 /*
  *	The AF_UNIX specific socket options
  */
- 
+
 struct unix_opt
 {
 	int 			family;
@@ -104,15 +104,15 @@ struct ipx_opt
 	ipx_interface		*intrfc;
 	unsigned short		port;
 #ifdef CONFIG_IPX_INTERN
-	unsigned char           node[IPX_NODE_LEN];
+	unsigned char	   node[IPX_NODE_LEN];
 #endif
 	unsigned short		type;
-/* 
+/*
  * To handle asynchronous messages from the NetWare server, we have to
- * know the connection this socket belongs to. 
+ * know the connection this socket belongs to.
  */
 	struct ncp_server       *ncp_server;
-	
+
 };
 #endif
 
@@ -147,86 +147,85 @@ struct tcp_opt
  	struct timer_list	retransmit_timer;	/* Resend (no ack) */
 };
 #endif
- 	
+
 /*
  * This structure really needs to be cleaned up.
  * Most of it is for TCP, and not used by any of
  * the other protocols.
  */
-struct sock 
+struct sock
 {
-	struct options		*opt;
+	struct options	*opt;
 	atomic_t		wmem_alloc;
 	atomic_t		rmem_alloc;
-	unsigned long		allocation;		/* Allocation mode */
+	unsigned long	allocation;		/* Allocation mode */
 	__u32			write_seq;
 	__u32			sent_seq;
 	__u32			acked_seq;
 	__u32			copied_seq;
 	__u32			rcv_ack_seq;
-	unsigned short		rcv_ack_cnt;		/* count of same ack */
+	unsigned short	rcv_ack_cnt;		/* count of same ack */
 	__u32			window_seq;
 	__u32			fin_seq;
 	__u32			urg_seq;
 	__u32			urg_data;
-	int			users;			/* user count */
+	int				users;			/* user count */
   /*
    *	Not all are volatile, but some are, so we
    * 	might as well say they all are.
    */
-	volatile char		dead,
-				urginline,
-				intr,
-				blog,
-				done,
-				reuse,
-				keepopen,
-				linger,
-				delay_acks,
-				destroy,
-				ack_timed,
-				no_check,
-				zapped,	/* In ax25 & ipx means not linked */
-				broadcast,
-				nonagle,
-				bsdism;
-	unsigned long	        lingertime;
-	int			proc;
+	volatile char	dead,
+					urginline,
+					intr,
+					blog,
+					done,
+					reuse,
+					keepopen,
+					linger,
+					delay_acks,
+					destroy,
+					ack_timed,
+					no_check,
+					zapped,	/* In ax25 & ipx means not linked */
+					broadcast,
+					nonagle,
+					bsdism;
+	unsigned long	lingertime;
+	int				proc;
 	struct sock		*next;
 	struct sock		*prev; /* Doubly linked chain.. */
 	struct sock		*pair;
-	struct sk_buff		* volatile send_head;
-	struct sk_buff		* volatile send_next;
-	struct sk_buff		* volatile send_tail;
-	struct sk_buff_head	back_log;
-	struct sk_buff		*partial;
-	struct timer_list	partial_timer;
-	long			retransmits;
-	struct sk_buff_head	write_queue,
-				receive_queue;
-	struct proto		*prot;
-	struct wait_queue	**sleep;
-	__u32			daddr;
-	__u32			saddr;		/* Sending source */
-	__u32			rcv_saddr;	/* Bound address */
-	unsigned short		max_unacked;
-	unsigned short		window;
-	__u32                   lastwin_seq;    /* sequence number when we last updated the window we offer */
-	__u32			high_seq;	/* sequence number when we did current fast retransmit */
-	volatile unsigned long  ato;            /* ack timeout */
+	struct sk_buff	*volatile send_head;
+	struct sk_buff	*volatile send_next;
+	struct sk_buff	*volatile send_tail;
+	struct sk_buff_head		back_log;
+	struct sk_buff			*partial;
+	struct timer_list		partial_timer;
+	long					retransmits;
+	struct sk_buff_head		write_queue, receive_queue;
+	struct proto			*prot;
+	struct wait_queue		**sleep;
+	__u32					daddr;
+	__u32					saddr;		/* Sending source */
+	__u32					rcv_saddr;	/* Bound address */
+	unsigned short			max_unacked;
+	unsigned short			window;
+	__u32					lastwin_seq;    /* sequence number when we last updated the window we offer */
+	__u32					high_seq;	/* sequence number when we did current fast retransmit */
+	volatile unsigned long  ato;	    /* ack timeout */
 	volatile unsigned long  lrcvtime;       /* jiffies at last data rcv */
 	volatile unsigned long  idletime;       /* jiffies at last rcv */
-	unsigned short		bytes_rcv;
+	unsigned short			bytes_rcv;
 /*
- *	mss is min(mtu, max_window) 
+ *	mss is min(mtu, max_window)
  */
-	unsigned short		mtu;       /* mss negotiated in the syn's */
+	unsigned short			mtu;       /* mss negotiated in the syn's */
 	volatile unsigned short	mss;       /* current eff. mss - can change */
 	volatile unsigned short	user_mss;  /* mss requested by user in ioctl */
 	volatile unsigned short	max_window;
-	unsigned long 		window_clamp;
-	unsigned int		ssthresh;
-	unsigned short		num;
+	unsigned long 			window_clamp;
+	unsigned int			ssthresh;
+	unsigned short			num;
 	volatile unsigned short	cong_window;
 	volatile unsigned short	cong_count;
 	volatile unsigned short	packets_out;
@@ -239,32 +238,32 @@ struct sock
  *	currently backoff isn't used, but I'm maintaining it in case
  *	we want to go back to a backoff formula that needs it
  */
- 
+
 	volatile unsigned short	backoff;
-	int			err, err_soft;	/* Soft holds errors that don't
+	int	err, err_soft;	/* Soft holds errors that don't
 						   cause failure but are the cause
 						   of a persistent failure not just
 						   'timed out' */
-	unsigned char		protocol;
+	unsigned char			protocol;
 	volatile unsigned char	state;
-	unsigned char		ack_backlog;
-	unsigned char		max_ack_backlog;
-	unsigned char		priority;
-	unsigned char		debug;
-	unsigned short		rcvbuf;
-	unsigned short		sndbuf;
-	unsigned short		type;
-	unsigned char		localroute;	/* Route locally only */
+	unsigned char			ack_backlog;
+	unsigned char			max_ack_backlog;
+	unsigned char			priority;
+	unsigned char			debug;
+	unsigned short			rcvbuf;
+	unsigned short			sndbuf;
+	unsigned short			type;
+	unsigned char			localroute;	/* Route locally only */
 #ifdef CONFIG_AX25
-	ax25_cb			*ax25;
+	ax25_cb					*ax25;
 #ifdef CONFIG_NETROM
-	nr_cb			*nr;
+	nr_cb					*nr;
 #endif
 #endif
-  
+
 /*
  *	This is where all the private (optional) areas that don't
- *	overlap will eventually live. 
+ *	overlap will eventually live.
  */
 
 	union
@@ -278,123 +277,120 @@ struct sock
 #endif
 #ifdef CONFIG_INET
 		struct inet_packet_opt  af_packet;
-#ifdef CONFIG_NUTCP		
+#ifdef CONFIG_NUTCP
 		struct tcp_opt		af_tcp;
-#endif		
 #endif
-	} protinfo;  		
-
-/* 
- *	IP 'private area' or will be eventually 
- */
-	int			ip_ttl;			/* TTL setting */
-	int			ip_tos;			/* TOS */
-	struct tcphdr		dummy_th;
-	struct timer_list	keepalive_timer;	/* TCP keepalive hack */
-	struct timer_list	retransmit_timer;	/* TCP retransmit timer */
-	struct timer_list	delack_timer;		/* TCP delayed ack timer */
-	int			ip_xmit_timeout;	/* Why the timeout is running */
-	struct rtable		*ip_route_cache;	/* Cached output route */
-	unsigned char		ip_hdrincl;		/* Include headers ? */
-#ifdef CONFIG_IP_MULTICAST  
-	int			ip_mc_ttl;		/* Multicasting TTL */
-	int			ip_mc_loop;		/* Loopback */
-	char			ip_mc_name[MAX_ADDR_LEN];/* Multicast device name */
-	struct ip_mc_socklist	*ip_mc_list;		/* Group array */
-#endif  
+#endif
+	} protinfo;
 
 /*
- *	This part is used for the timeout functions (timer.c). 
+ *	IP 'private area' or will be eventually
  */
- 
-	int			timeout;	/* What are we waiting for? */
+	int						ip_ttl;			/* TTL setting */
+	int						ip_tos;			/* TOS */
+	struct tcphdr			dummy_th;
+	struct timer_list		keepalive_timer;	/* TCP keepalive hack */
+	struct timer_list		retransmit_timer;	/* TCP retransmit timer */
+	struct timer_list		delack_timer;		/* TCP delayed ack timer */
+	int						ip_xmit_timeout;	/* Why the timeout is running */
+	struct rtable			*ip_route_cache;	/* Cached output route */
+	unsigned char			ip_hdrincl;		/* Include headers ? */
+#ifdef CONFIG_IP_MULTICAST
+	int						ip_mc_ttl;		/* Multicasting TTL */
+	int						ip_mc_loop;		/* Loopback */
+	char					ip_mc_name[MAX_ADDR_LEN];/* Multicast device name */
+	struct ip_mc_socklist	*ip_mc_list;		/* Group array */
+#endif
+
+/*
+ *	This part is used for the timeout functions (timer.c).
+ */
+
+	int					timeout;	/* What are we waiting for? */
 	struct timer_list	timer;		/* This is the TIME_WAIT/receive timer
 					 * when we are doing IP
 					 */
 	struct timeval		stamp;
 
  /*
-  *	Identd 
+  *	Identd
   */
-  
+
 	struct socket		*socket;
-  
+
   /*
-   *	Callbacks 
+   *	Callbacks
    */
-   
-	void			(*state_change)(struct sock *sk);
-	void			(*data_ready)(struct sock *sk,int bytes);
-	void			(*write_space)(struct sock *sk);
-	void			(*error_report)(struct sock *sk);
-  
+
+	void	(*state_change)(struct sock *sk);
+	void	(*data_ready)(struct sock *sk,int bytes);
+	void	(*write_space)(struct sock *sk);
+	void	(*error_report)(struct sock *sk);
 };
 
 /*
  *	IP protocol blocks we attach to sockets.
  */
- 
-struct proto 
+
+struct proto
 {
 	void			(*close)(struct sock *sk, unsigned long timeout);
-	int			(*build_header)(struct sk_buff *skb,
-					__u32 saddr,
-					__u32 daddr,
-					struct device **dev, int type,
-					struct options *opt, int len,
-					int tos, int ttl, struct rtable ** rp);
-	int			(*connect)(struct sock *sk,
-				        struct sockaddr_in *usin, int addr_len);
-	struct sock *		(*accept) (struct sock *sk, int flags);
+	int				(*build_header)(struct sk_buff *skb,
+									__u32 saddr,
+									__u32 daddr,
+									struct device **dev, int type,
+									struct options *opt, int len,
+									int tos, int ttl, struct rtable ** rp);
+	int				(*connect)(struct sock *sk,
+							   struct sockaddr_in *usin, int addr_len);
+	struct sock 	*(*accept) (struct sock *sk, int flags);
 	void			(*queue_xmit)(struct sock *sk,
-				        struct device *dev, struct sk_buff *skb,
-				        int free);
+								  struct device *dev, struct sk_buff *skb,
+								  int free);
 	void			(*retransmit)(struct sock *sk, int all);
 	void			(*write_wakeup)(struct sock *sk);
 	void			(*read_wakeup)(struct sock *sk);
-	int			(*rcv)(struct sk_buff *buff, struct device *dev,
-				        struct options *opt, __u32 daddr,
-				        unsigned short len, __u32 saddr,
-				        int redo, struct inet_protocol *protocol);
-	int			(*select)(struct sock *sk, int which,
-					select_table *wait);
-	int			(*ioctl)(struct sock *sk, int cmd,
-					unsigned long arg);
-	int			(*init)(struct sock *sk);
+	int				(*rcv)(struct sk_buff *buff, struct device *dev,
+							struct options *opt, __u32 daddr,
+							unsigned short len, __u32 saddr,
+							int redo, struct inet_protocol *protocol);
+	int				(*select)(struct sock *sk, int which, select_table *wait);
+	int				(*ioctl)(struct sock *sk, int cmd, unsigned long arg);
+	int				(*init)(struct sock *sk);
 	void			(*shutdown)(struct sock *sk, int how);
-	int			(*setsockopt)(struct sock *sk, int level, int optname,
-					char *optval, int optlen);
-	int			(*getsockopt)(struct sock *sk, int level, int optname,
-					char *optval, int *option);  	 
-	int			(*sendmsg)(struct sock *sk, struct msghdr *msg, int len,
-					int noblock, int flags);
-	int			(*recvmsg)(struct sock *sk, struct msghdr *msg, int len,
-					int noblock, int flags, int *addr_len);
-	int			(*bind)(struct sock *sk, struct sockaddr *uaddr, int addr_len);
-	unsigned short		max_header;
-	unsigned long		retransmits;
+	int				(*setsockopt)(struct sock *sk, int level, int optname,
+								  char *optval, int optlen);
+	int				(*getsockopt)(struct sock *sk, int level, int optname,
+								  char *optval, int *option);
+	int				(*sendmsg)(struct sock *sk, struct msghdr *msg, int len,
+							   int noblock, int flags);
+	int				(*recvmsg)(struct sock *sk, struct msghdr *msg, int len,
+							   int noblock, int flags, int *addr_len);
+	int				(*bind)(struct sock *sk, struct sockaddr *uaddr, int addr_len);
+	unsigned short	max_header;
+	unsigned long	retransmits;
 	char			name[32];
-	int			inuse, highestinuse;
-	struct sock *		sock_array[SOCK_ARRAY_SIZE];
+	int				inuse, highestinuse;
+	struct sock		*sock_array[SOCK_ARRAY_SIZE];
 };
 
-#define TIME_WRITE	1
-#define TIME_CLOSE	2
+#define TIME_WRITE		1
+#define TIME_CLOSE		2
 #define TIME_KEEPOPEN	3
 #define TIME_DESTROY	4
-#define TIME_DONE	5	/* Used to absorb those last few packets */
-#define TIME_PROBE0	6
+#define TIME_DONE		5	/* Used to absorb those last few packets */
+#define TIME_PROBE0		6
 
 /*
- *	About 10 seconds 
+ *	About 10 seconds
  */
 
 #define SOCK_DESTROY_TIME (10*HZ)
 
 /*
- *	Sockets 0-1023 can't be bound to unless you are superuser 
+ *	Sockets 0-1023 can't be bound to unless you are superuser
  */
- 
+
 #define PROT_SOCK	1024
 
 #define SHUTDOWN_MASK	3
@@ -450,7 +446,7 @@ extern void			sk_free(struct sock *sk);
 extern void			destroy_sock(struct sock *sk);
 extern unsigned short		get_new_socknum(struct proto *,
 						unsigned short);
-extern void			put_sock(unsigned short, struct sock *); 
+extern void			put_sock(unsigned short, struct sock *);
 extern struct sock		*get_sock(struct proto *, unsigned short,
 					  unsigned long, unsigned short,
 					  unsigned long,
@@ -479,7 +475,7 @@ extern int			sock_setsockopt(struct sock *sk, int level,
 						int optlen);
 
 extern int			sock_getsockopt(struct sock *sk, int level,
-						int op, char *optval, 
+						int op, char *optval,
 						int *optlen);
 extern struct sk_buff 		*sock_alloc_send_skb(struct sock *skb,
 						     unsigned long size,
@@ -523,17 +519,17 @@ extern __inline__ int __sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 /*
  *	Recover an error report and clear atomically
  */
- 
+
 extern __inline__ int sock_error(struct sock *sk)
 {
 	int err=xchg(&sk->err,0);
 	return -err;
 }
 
-/* 
- *	Declarations from timer.c 
+/*
+ *	Declarations from timer.c
  */
- 
+
 extern struct sock *timer_base;
 
 extern void delete_timer (struct sock *);
@@ -541,8 +537,8 @@ extern void reset_timer (struct sock *, int, unsigned long);
 extern void net_timer (unsigned long);
 
 
-/* 
- *	Enable debug/info messages 
+/*
+ *	Enable debug/info messages
  */
 
 #define NETDEBUG(x)	do { } while (0)

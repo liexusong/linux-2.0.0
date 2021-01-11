@@ -4,7 +4,7 @@
  *	Authors:	Alan Cox <iiitac@pyr.swan.ac.uk>
  *			Florian La Roche <rzsfl@rz.uni-sb.de>
  *
- *	Fixes:	
+ *	Fixes:
  *		Alan Cox	:	Fixed the worst of the load balancer bugs.
  *		Dave Platt	:	Interrupt stacking fix.
  *	Richard Kooijman	:	Timestamp fixes.
@@ -19,7 +19,7 @@
  *	TO FIX:
  *		The __skb_ routines ought to check interrupts are disabled
  *	when called, and bitch like crazy if not. Unfortunately I don't think
- *	we currently have a portable way to check if interrupts are off - 
+ *	we currently have a portable way to check if interrupts are off -
  *	Linus ???
  *
  *	This program is free software; you can redistribute it and/or
@@ -76,7 +76,7 @@ void show_net_buffers(void)
 	printk(KERN_INFO "Total free while locked events     : %u\n",net_free_locked);
 #ifdef CONFIG_INET
 	printk(KERN_INFO "IP fragment buffer size            : %u\n",ip_frag_mem);
-#endif	
+#endif
 }
 
 #if CONFIG_SKB_CHECK
@@ -274,7 +274,7 @@ void skb_queue_tail(struct sk_buff_head *list_, struct sk_buff *newsk)
 
 	newsk->next->prev = newsk;
 	newsk->prev->next = newsk;
-	
+
 	newsk->list = list_;
 	list_->qlen++;
 
@@ -295,7 +295,7 @@ void __skb_queue_tail(struct sk_buff_head *list_, struct sk_buff *newsk)
 
 	newsk->next->prev = newsk;
 	newsk->prev->next = newsk;
-	
+
 	newsk->list = list_;
 	list_->qlen++;
 }
@@ -329,7 +329,7 @@ struct sk_buff *skb_dequeue(struct sk_buff_head *list_)
 	result->prev = NULL;
 	list_->qlen--;
 	result->list = NULL;
-	
+
 	restore_flags(flags);
 
 	IS_SKB(result);
@@ -355,7 +355,7 @@ struct sk_buff *__skb_dequeue(struct sk_buff_head *list_)
 	result->prev = NULL;
 	list_->qlen--;
 	result->list = NULL;
-	
+
 	IS_SKB(result);
 	return result;
 }
@@ -496,7 +496,7 @@ void __skb_unlink(struct sk_buff *skb)
 /*
  *	Add data to an sk_buff
  */
- 
+
 unsigned char *skb_put(struct sk_buff *skb, int len)
 {
 	unsigned char *tmp=skb->tail;
@@ -512,10 +512,10 @@ unsigned char *skb_put(struct sk_buff *skb, int len)
 unsigned char *skb_push(struct sk_buff *skb, int len)
 {
 	IS_SKB(skb);
-	skb->data-=len;
-	skb->len+=len;
+	skb->data -= len;
+	skb->len += len;
 	IS_SKB(skb);
-	if(skb->data<skb->head)
+	if(skb->data < skb->head)
 		panic("skpush:under: %p:%d", __builtin_return_address(0),len);
 	return skb->data;
 }
@@ -523,10 +523,10 @@ unsigned char *skb_push(struct sk_buff *skb, int len)
 unsigned char * skb_pull(struct sk_buff *skb, int len)
 {
 	IS_SKB(skb);
-	if(len>skb->len)
+	if(len > skb->len)
 		return 0;
-	skb->data+=len;
-	skb->len-=len;
+	skb->data += len;
+	skb->len -= len;
 	return skb->data;
 }
 
@@ -636,7 +636,7 @@ struct sk_buff *alloc_skb(unsigned int size,int priority)
 	int len=size;
 	unsigned char *bptr;
 
-	if (intr_count && priority!=GFP_ATOMIC) 
+	if (intr_count && priority!=GFP_ATOMIC)
 	{
 		static int count = 0;
 		if (++count < 5) {
@@ -648,11 +648,11 @@ struct sk_buff *alloc_skb(unsigned int size,int priority)
 
 	size=(size+15)&~15;		/* Allow for alignments. Make a multiple of 16 bytes */
 	size+=sizeof(struct sk_buff);	/* And stick the control itself on the end */
-	
+
 	/*
 	 *	Allocate some space
 	 */
-	 
+
 	bptr=(unsigned char *)kmalloc(size,priority);
 	if (bptr == NULL)
 	{
@@ -665,13 +665,13 @@ struct sk_buff *alloc_skb(unsigned int size,int priority)
 #endif
 	/*
 	 *	Now we play a little game with the caches. Linux kmalloc is
-	 *	a bit cache dumb, in fact its just about maximally non 
+	 *	a bit cache dumb, in fact its just about maximally non
 	 *	optimal for typical kernel buffers. We actually run faster
 	 *	by doing the following. Which is to deliberately put the
 	 *	skb at the _end_ not the start of the memory block.
 	 */
 	net_allocs++;
-	
+
 	skb=(struct sk_buff *)(bptr+size)-1;
 
 	skb->count = 1;		/* only one reference to this */
@@ -766,9 +766,9 @@ struct sk_buff *skb_clone(struct sk_buff *skb, int priority)
 }
 
 /*
- *	This is slower, and copies the whole data area 
+ *	This is slower, and copies the whole data area
  */
- 
+
 struct sk_buff *skb_copy(struct sk_buff *skb, int priority)
 {
 	struct sk_buff *n;
@@ -777,9 +777,9 @@ struct sk_buff *skb_copy(struct sk_buff *skb, int priority)
 	/*
 	 *	Allocate the copy buffer
 	 */
-	 
+
 	IS_SKB(skb);
-	
+
 	n=alloc_skb(skb->truesize-sizeof(struct sk_buff),priority);
 	if(n==NULL)
 		return NULL;
@@ -787,7 +787,7 @@ struct sk_buff *skb_copy(struct sk_buff *skb, int priority)
 	/*
 	 *	Shift between the two data areas in bytes
 	 */
-	 
+
 	offset=n->head-skb->head;
 
 	/* Set the data pointer */
@@ -820,7 +820,7 @@ struct sk_buff *skb_copy(struct sk_buff *skb, int priority)
 	n->users=0;
 	n->pkt_type=skb->pkt_type;
 	n->stamp=skb->stamp;
-	
+
 	IS_SKB(n);
 	return n;
 }

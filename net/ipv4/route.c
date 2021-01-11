@@ -19,7 +19,7 @@
  *		(rco@di.uminho.pt)	Routing table insertion and update
  *		Linus Torvalds	:	Rewrote bits to be sensible
  *		Alan Cox	:	Added BSD route gw semantics
- *		Alan Cox	:	Super /proc >4K 
+ *		Alan Cox	:	Super /proc >4K
  *		Alan Cox	:	MTU in route table
  *		Alan Cox	: 	MSS actually. Also added the window
  *					clamper.
@@ -37,7 +37,7 @@
  *		Alan Cox	:	Faster /proc handling
  *	Alexey Kuznetsov	:	Massive rework to support tree based routing,
  *					routing caches and better behaviour.
- *		
+ *
  *		Olaf Erb	:	irtt wasn't being copied right.
  *		Bjorn Ekwall	:	Kerneld route support.
  *		Alan Cox	:	Multicast fixed (I hope)
@@ -84,24 +84,24 @@
 struct fib_node
 {
 	struct fib_node		*fib_next;
-	__u32			fib_dst;
+	__u32				fib_dst;
 	unsigned long		fib_use;
 	struct fib_info		*fib_info;
-	short			fib_metric;
+	short				fib_metric;
 	unsigned char		fib_tos;
 };
 
 /*
  * This structure contains data shared by many of routes.
- */	
+ */
 
 struct fib_info
 {
 	struct fib_info		*fib_next;
 	struct fib_info		*fib_prev;
-	__u32			fib_gateway;
+	__u32				fib_gateway;
 	struct device		*fib_dev;
-	int			fib_refcnt;
+	int					fib_refcnt;
 	unsigned long		fib_window;
 	unsigned short		fib_flags;
 	unsigned short		fib_mtu;
@@ -113,9 +113,9 @@ struct fib_zone
 	struct fib_zone	*fz_next;
 	struct fib_node	**fz_hash_table;
 	struct fib_node	*fz_list;
-	int		fz_nent;
-	int		fz_logmask;
-	__u32		fz_mask;
+	int				fz_nent;
+	int				fz_logmask;
+	__u32			fz_mask;
 };
 
 static struct fib_zone 	*fib_zones[33];
@@ -140,25 +140,25 @@ struct rt_req
 	unsigned char tos;
 };
 
-int		    	ip_rt_lock;
-unsigned		ip_rt_bh_mask;
-static struct rt_req 	*rt_backlog;
+int ip_rt_lock;
+unsigned ip_rt_bh_mask;
+static struct rt_req *rt_backlog;
 
 /*
  * Route cache.
  */
 
-struct rtable 		*ip_rt_hash_table[RT_HASH_DIVISOR];
-static int		rt_cache_size;
-static struct rtable 	*rt_free_queue;
-struct wait_queue	*rt_wait;
+struct rtable *ip_rt_hash_table[RT_HASH_DIVISOR];
+static int rt_cache_size;
+static struct rtable *rt_free_queue;
+struct wait_queue *rt_wait;
 
 static void rt_kick_backlog(void);
 static void rt_cache_add(unsigned hash, struct rtable * rth);
 static void rt_cache_flush(void);
 static void rt_garbage_collect_1(void);
 
-/* 
+/*
  * Evaluate mask length.
  */
 
@@ -169,7 +169,7 @@ static __inline__ int rt_logmask(__u32 mask)
 	return ffz(~mask);
 }
 
-/* 
+/*
  * Create mask from length.
  */
 
@@ -216,13 +216,13 @@ static struct fib_node * fib_lookup_gateway(__u32 dst)
 	struct fib_zone * fz;
 	struct fib_node * f;
 
-	for (fz = fib_zone_list; fz; fz = fz->fz_next) 
+	for (fz = fib_zone_list; fz; fz = fz->fz_next)
 	{
 		if (fz->fz_hash_table)
 			f = fz->fz_hash_table[fz_hash_code(dst, fz->fz_logmask)];
 		else
 			f = fz->fz_list;
-		
+
 		for ( ; f; f = f->fib_next)
 		{
 			if ((dst ^ f->fib_dst) & fz->fz_mask)
@@ -254,7 +254,7 @@ static struct fib_node * fib_lookup_local(__u32 dst)
 	struct fib_zone * fz;
 	struct fib_node * f;
 
-	for (fz = fib_zone_list; fz; fz = fz->fz_next) 
+	for (fz = fib_zone_list; fz; fz = fz->fz_next)
 	{
 		int longest_match_found = 0;
 
@@ -262,7 +262,7 @@ static struct fib_node * fib_lookup_local(__u32 dst)
 			f = fz->fz_hash_table[fz_hash_code(dst, fz->fz_logmask)];
 		else
 			f = fz->fz_list;
-		
+
 		for ( ; f; f = f->fib_next)
 		{
 			if ((dst ^ f->fib_dst) & fz->fz_mask)
@@ -294,13 +294,13 @@ static struct fib_node * fib_lookup(__u32 dst)
 	struct fib_zone * fz;
 	struct fib_node * f;
 
-	for (fz = fib_zone_list; fz; fz = fz->fz_next) 
+	for (fz = fib_zone_list; fz; fz = fz->fz_next)
 	{
 		if (fz->fz_hash_table)
 			f = fz->fz_hash_table[fz_hash_code(dst, fz->fz_logmask)];
 		else
 			f = fz->fz_list;
-		
+
 		for ( ; f; f = f->fib_next)
 		{
 			if ((dst ^ f->fib_dst) & fz->fz_mask)
@@ -323,7 +323,7 @@ static __inline__ struct device * get_gw_dev(__u32 gw)
 /*
  *	Check if a mask is acceptable.
  */
- 
+
 static inline int bad_mask(__u32 mask, __u32 addr)
 {
 	if (addr & (mask = ~mask))
@@ -341,7 +341,7 @@ static int fib_del_list(struct fib_node **fp, __u32 dst,
 	struct fib_node *f;
 	int found=0;
 
-	while((f = *fp) != NULL) 
+	while((f = *fp) != NULL)
 	{
 		struct fib_info * fi = f->fib_info;
 
@@ -391,7 +391,7 @@ static __inline__ int fib_del_1(__u32 dst, __u32 mask,
 			fz->fz_nent -= tmp;
 			found += tmp;
 		}
-	} 
+	}
 	else
 	{
 		if ((fz = fib_zones[rt_logmask(mask)]) != NULL)
@@ -400,7 +400,7 @@ static __inline__ int fib_del_1(__u32 dst, __u32 mask,
 				fp = &fz->fz_hash_table[fz_hash_code(dst, fz->fz_logmask)];
 			else
 				fp = &fz->fz_list;
-	
+
 			found = fib_del_list(fp, dst, dev, gtw, flags, metric, mask);
 			fz->fz_nent -= found;
 		}
@@ -494,7 +494,7 @@ static __inline__ void fib_add_1(short flags, __u32 dst, __u32 mask,
 	/*
 	 *	Allocate an entry and fill it in.
 	 */
-	 
+
 	f = (struct fib_node *) kmalloc(sizeof(struct fib_node), GFP_KERNEL);
 	if (f == NULL)
 		return;
@@ -572,7 +572,7 @@ static __inline__ void fib_add_1(short flags, __u32 dst, __u32 mask,
 				f1 = next;
 			}
 			fz->fz_list = NULL;
-			fz->fz_hash_table = ht; 
+			fz->fz_hash_table = ht;
 			sti();
 		}
 	}
@@ -601,7 +601,7 @@ static __inline__ void fib_add_1(short flags, __u32 dst, __u32 mask,
 			break;
 		/*
 		 *	Record route with the same destination and gateway,
-		 *	but less metric. We'll delete it 
+		 *	but less metric. We'll delete it
 		 *	after instantiation of new route.
 		 */
 		if (f1->fib_info->fib_gateway == gw &&
@@ -619,7 +619,7 @@ static __inline__ void fib_add_1(short flags, __u32 dst, __u32 mask,
 		fib_free_node(f);
 		return;
 	}
-	
+
 	/*
 	 * Insert new entry to the list.
 	 */
@@ -713,13 +713,13 @@ static __inline__ void fib_flush_1(struct device *dev)
 			found += tmp;
 		}
 	}
-		
+
 	if (found)
 		rt_cache_flush();
 }
 
 
-/* 
+/*
  *	Called from the PROCfs module. This outputs /proc/net/route.
  *
  *	We preserve the old format but pad the buffers out. This means that
@@ -729,7 +729,7 @@ static __inline__ void fib_flush_1(struct device *dev)
  *	last route we got to (reads will generally be following on from
  *	one another without gaps).
  */
- 
+
 int rt_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 {
 	struct fib_zone *fz;
@@ -738,7 +738,7 @@ int rt_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 	off_t pos=0;
 	char temp[129];
 	int i;
-	
+
 	pos = 128;
 
 	if (offset<128)
@@ -746,7 +746,7 @@ int rt_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 		sprintf(buffer,"%-127s\n","Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT");
 		len = 128;
   	}
-  	
+
 	while  (ip_rt_lock)
 		sleep_on(&rt_wait);
 	ip_rt_fast_lock();
@@ -776,11 +776,11 @@ int rt_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 			maxslot	= 1;
 			fp	= &fz->fz_list;
 		}
-			
+
 		for (i=0; i < maxslot; i++, fp++)
 		{
-			
-			for (f = *fp; f; f = f->fib_next) 
+
+			for (f = *fp; f; f = f->fib_next)
 			{
 				struct fib_info * fi;
 				/*
@@ -793,7 +793,7 @@ int rt_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 					len=0;
 					continue;
 				}
-					
+
 				fi = f->fib_info;
 				sprintf(temp, "%s\t%08lX\t%08lX\t%02X\t%d\t%lu\t%d\t%08lX\t%d\t%lu\t%u",
 					fi->fib_dev->name, (unsigned long)f->fib_dst, (unsigned long)fi->fib_gateway,
@@ -811,7 +811,7 @@ int rt_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 done:
 	ip_rt_unlock();
 	wake_up(&rt_wait);
-  	
+
   	*start = buffer+len-(pos-offset);
   	len = pos - offset;
   	if (len>length)
@@ -834,15 +834,15 @@ int rt_cache_get_info(char *buffer, char **start, off_t offset, int length, int 
 		sprintf(buffer,"%-127s\n","Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tSource\t\tMTU\tWindow\tIRTT\tHH\tARP");
 		len = 128;
   	}
-	
-  	
+
+
 	while  (ip_rt_lock)
 		sleep_on(&rt_wait);
 	ip_rt_fast_lock();
 
 	for (i = 0; i<RT_HASH_DIVISOR; i++)
 	{
-		for (r = ip_rt_hash_table[i]; r; r = r->rt_next) 
+		for (r = ip_rt_hash_table[i]; r; r = r->rt_next)
 		{
 			/*
 			 *	Spin through entries until we are ready
@@ -854,7 +854,7 @@ int rt_cache_get_info(char *buffer, char **start, off_t offset, int length, int 
 				len = 0;
 				continue;
 			}
-					
+
 			sprintf(temp, "%s\t%08lX\t%08lX\t%02X\t%d\t%u\t%d\t%08lX\t%d\t%lu\t%u\t%d\t%1d",
 				r->rt_dev->name, (unsigned long)r->rt_dst, (unsigned long)r->rt_gateway,
 				r->rt_flags, r->rt_refcnt, r->rt_use, 0,
@@ -869,7 +869,7 @@ int rt_cache_get_info(char *buffer, char **start, off_t offset, int length, int 
 done:
 	ip_rt_unlock();
 	wake_up(&rt_wait);
-  	
+
   	*start = buffer+len-(pos-offset);
   	len = pos-offset;
   	if (len>length)
@@ -976,13 +976,13 @@ void ip_rt_check_expire()
 		unsigned long now = jiffies;
 
 		save_flags(flags);
-		for (i=0; i<RT_HASH_DIVISOR; i++)
+		for (i = 0; i < RT_HASH_DIVISOR; i++)
 		{
 			rthp = &ip_rt_hash_table[i];
 
 			while ((rth = *rthp) != NULL)
 			{
-				struct rtable * rth_next = rth->rt_next;
+				struct rtable *rth_next = rth->rt_next;
 
 				/*
 				 * Cleanup aged off entries.
@@ -1043,7 +1043,7 @@ static void rt_redirect_1(__u32 dst, __u32 gw, struct device *dev)
 	if (dev != get_gw_dev(gw))
 		return;
 	rt = (struct rtable *) kmalloc(sizeof(struct rtable), GFP_ATOMIC);
-	if (rt == NULL) 
+	if (rt == NULL)
 		return;
 	memset(rt, 0, sizeof(struct rtable));
 	rt->rt_flags = RTF_DYNAMIC | RTF_MODIFIED | RTF_HOST | RTF_GATEWAY | RTF_UP;
@@ -1386,18 +1386,18 @@ static void rt_cache_add(unsigned hash, struct rtable * rth)
 
 /*
    RT should be already locked.
-   
+
    We could improve this by keeping a chain of say 32 struct rtable's
    last freed for fast recycling.
-   
+
  */
 
 struct rtable * ip_rt_slow_route (__u32 daddr, int local)
 {
 	unsigned hash = ip_rt_hash_code(daddr)^local;
-	struct rtable * rth;
-	struct fib_node * f;
-	struct fib_info * fi;
+	struct rtable *rth;
+	struct fib_node *f;
+	struct fib_info *fi;
 	__u32 saddr;
 
 #if RT_CACHE_DEBUG >= 2
@@ -1424,21 +1424,21 @@ struct rtable * ip_rt_slow_route (__u32 daddr, int local)
 
 	if (!f || (fi->fib_flags & RTF_REJECT))
 	{
-#ifdef CONFIG_KERNELD	
+#ifdef CONFIG_KERNELD
 		char wanted_route[20];
-#endif		
+#endif
 #if RT_CACHE_DEBUG >= 2
 		printk("rt_route failed @%08x\n", daddr);
 #endif
 		ip_rt_unlock();
 		kfree_s(rth, sizeof(struct rtable));
-#ifdef CONFIG_KERNELD		
+#ifdef CONFIG_KERNELD
 		daddr=ntohl(daddr);
 		sprintf(wanted_route, "%d.%d.%d.%d",
 			(int)(daddr >> 24) & 0xff, (int)(daddr >> 16) & 0xff,
 			(int)(daddr >> 8) & 0xff, (int)daddr & 0xff);
 		kerneld_route(wanted_route); 	/* Dynamic route request */
-#endif		
+#endif
 		return NULL;
 	}
 
@@ -1453,7 +1453,7 @@ struct rtable * ip_rt_slow_route (__u32 daddr, int local)
 			fi = f->fib_info;
 		}
 	}
-	
+
 	if (!f)
 	{
 		ip_rt_unlock();
@@ -1523,14 +1523,14 @@ struct rtable * ip_rt_route(__u32 daddr, int local)
 			return rth;
 		}
 	}
-	return ip_rt_slow_route (daddr, local);
+	return ip_rt_slow_route(daddr, local);
 }
 
 /*
  *	Process a route add request from the user, or from a kernel
  *	task.
  */
- 
+
 int ip_rt_new(struct rtentry *r)
 {
 	int err;
@@ -1543,8 +1543,8 @@ int ip_rt_new(struct rtentry *r)
 	/*
 	 *	If a device is specified find it.
 	 */
-	 
-	if ((devname = r->rt_dev) != NULL) 
+
+	if ((devname = r->rt_dev) != NULL)
 	{
 		err = getname(devname, &devname);
 		if (err)
@@ -1554,7 +1554,7 @@ int ip_rt_new(struct rtentry *r)
 		if (!dev)
 			return -ENODEV;
 	}
-	
+
 	/*
 	 *	If the device isn't INET, don't allow it
 	 */
@@ -1566,7 +1566,7 @@ int ip_rt_new(struct rtentry *r)
 	 *	Make local copies of the important bits
 	 *	We decrement the metric by one for BSD compatibility.
 	 */
-	 
+
 	flags = r->rt_flags;
 	daddr = (__u32) ((struct sockaddr_in *) &r->rt_dst)->sin_addr.s_addr;
 	mask  = (__u32) ((struct sockaddr_in *) &r->rt_genmask)->sin_addr.s_addr;
@@ -1578,13 +1578,13 @@ int ip_rt_new(struct rtentry *r)
 	 *	to indicate which iface. Not as clean as the nice Linux dev technique
 	 *	but people keep using it...  (and gated likes it ;))
 	 */
-	 
-	if (!dev && (flags & RTF_GATEWAY)) 
+
+	if (!dev && (flags & RTF_GATEWAY))
 	{
 		struct device *dev2;
-		for (dev2 = dev_base ; dev2 != NULL ; dev2 = dev2->next) 
+		for (dev2 = dev_base ; dev2 != NULL ; dev2 = dev2->next)
 		{
-			if ((dev2->flags & IFF_UP) && dev2->pa_addr == gw) 
+			if ((dev2->flags & IFF_UP) && dev2->pa_addr == gw)
 			{
 				flags &= ~RTF_GATEWAY;
 				dev = dev2;
@@ -1593,18 +1593,18 @@ int ip_rt_new(struct rtentry *r)
 		}
 	}
 
-	if (flags & RTF_HOST) 
+	if (flags & RTF_HOST)
 		mask = 0xffffffff;
 	else if (mask && r->rt_genmask.sa_family != AF_INET)
 		return -EAFNOSUPPORT;
 
-	if (flags & RTF_GATEWAY) 
+	if (flags & RTF_GATEWAY)
 	{
 		if (r->rt_gateway.sa_family != AF_INET)
 			return -EAFNOSUPPORT;
 
 		/*
-		 *	Don't try to add a gateway we can't reach.. 
+		 *	Don't try to add a gateway we can't reach..
 		 *	Tunnel devices are exempt from this rule.
 		 */
 
@@ -1614,7 +1614,7 @@ int ip_rt_new(struct rtentry *r)
 			return -EINVAL;
 		if (!dev)
 			return -ENETUNREACH;
-	} 
+	}
 	else
 	{
 		gw = 0;
@@ -1633,7 +1633,7 @@ int ip_rt_new(struct rtentry *r)
 	if (!mask)
 		mask = ip_get_mask(daddr);
 #endif
-	
+
 	if (bad_mask(mask, daddr))
 		return -EINVAL;
 
@@ -1662,7 +1662,7 @@ int ip_rt_kill(struct rtentry *r)
 	trg = (struct sockaddr_in *) &r->rt_dst;
 	msk = (struct sockaddr_in *) &r->rt_genmask;
 	gtw = (struct sockaddr_in *) &r->rt_gateway;
-	if ((devname = r->rt_dev) != NULL) 
+	if ((devname = r->rt_dev) != NULL)
 	{
 		err = getname(devname, &devname);
 		if (err)
@@ -1684,13 +1684,13 @@ int ip_rt_kill(struct rtentry *r)
 /*
  *	Handle IP routing ioctl calls. These are used to manipulate the routing tables
  */
- 
+
 int ip_rt_ioctl(unsigned int cmd, void *arg)
 {
 	int err;
 	struct rtentry rt;
 
-	switch(cmd) 
+	switch(cmd)
 	{
 		case SIOCADDRT:		/* Add a route */
 		case SIOCDELRT:		/* Delete a route */
@@ -1722,5 +1722,5 @@ void ip_rt_update(int event, struct device *dev)
 		rt_add(RTF_HOST|RTF_UP, dev->pa_addr, ~0, 0, dev, 0, 0, 0, 0);
 	else if (event == NETDEV_DOWN)
 		rt_del(dev->pa_addr, ~0, dev, 0, RTF_HOST|RTF_UP, 0);
-#endif		
+#endif
 }

@@ -40,7 +40,7 @@
 #define MAX_HEADER	80		/* We need to allow for having tunnel headers */
 #endif  /* IPIP */
 #else
-#define MAX_HEADER	48		/* Token Ring header needs 40 bytes ... 48 is aligned */ 
+#define MAX_HEADER	48		/* Token Ring header needs 40 bytes ... 48 is aligned */
 #endif /* TR */
 #else
 #define MAX_HEADER	96		/* AX.25 + NetROM */
@@ -55,9 +55,9 @@
 /*
  *	We tag multicasts with these structures.
  */
- 
+
 struct dev_mc_list
-{	
+{
 	struct dev_mc_list *next;
 	char dmi_addr[MAX_ADDR_LEN];
 	unsigned short dmi_addrlen;
@@ -81,9 +81,9 @@ struct hh_cache
  * The DEVICE structure.
  * Actually, this whole structure is a big mistake.  It mixes I/O
  * data with strictly "high-level" data, and it has to know about
- * almost every data structure used in the INET module.  
+ * almost every data structure used in the INET module.
  */
-struct device 
+struct device
 {
 
   /*
@@ -149,17 +149,17 @@ struct device
 
   struct dev_mc_list	 *mc_list;	/* Multicast mac addresses	*/
   int			 mc_count;	/* Number of installed mcasts	*/
-  
+
   struct ip_mc_list	 *ip_mc_list;	/* IP multicast filter chain    */
   __u32			tx_queue_len;	/* Max frames per queue allowed */
-    
+
   /* For load balancing driver pair support */
-  
+
   unsigned long		   pkt_queue;	/* Packets queued */
   struct device		  *slave;	/* Slave device */
   struct net_alias_info		*alias_info;	/* main dev alias info */
   struct net_alias		*my_alias;	/* alias devs */
-  
+
   /* Pointer to the interface buffers. */
   struct sk_buff_head	  buffs[DEV_NUMBUFFS];
 
@@ -176,9 +176,9 @@ struct device
 					  unsigned len);
   int			  (*rebuild_header)(void *eth, struct device *dev,
 				unsigned long raddr, struct sk_buff *skb);
-#define HAVE_MULTICAST			 
+#define HAVE_MULTICAST
   void			  (*set_multicast_list)(struct device *dev);
-#define HAVE_SET_MAC_ADDR  		 
+#define HAVE_SET_MAC_ADDR
   int			  (*set_mac_address)(struct device *dev, void *addr);
 #define HAVE_PRIVATE_IOCTL
   int			  (*do_ioctl)(struct device *dev, struct ifreq *ifr, int cmd);
@@ -188,17 +188,16 @@ struct device
   void			  (*header_cache_bind)(struct hh_cache **hhp, struct device *dev, unsigned short htype, __u32 daddr);
   void			  (*header_cache_update)(struct hh_cache *hh, struct device *dev, unsigned char *  haddr);
 #define HAVE_CHANGE_MTU
-  int			  (*change_mtu)(struct device *dev, int new_mtu);            
+  int			  (*change_mtu)(struct device *dev, int new_mtu);
 };
 
-
+// 网络层数据包处理函数
 struct packet_type {
-  unsigned short	type;	/* This is really htons(ether_type). */
-  struct device *	dev;
-  int			(*func) (struct sk_buff *, struct device *,
-				 struct packet_type *);
-  void			*data;
-  struct packet_type	*next;
+  unsigned short type;	/* This is really htons(ether_type). */
+  struct device *dev;
+  int (*func)(struct sk_buff *, struct device *, struct packet_type *);
+  void *data;
+  struct packet_type *next;
 };
 
 
@@ -232,7 +231,7 @@ extern int		dev_open(struct device *dev);
 extern int		dev_close(struct device *dev);
 extern void		dev_queue_xmit(struct sk_buff *skb, struct device *dev,
 				       int pri);
-				      
+
 #define HAVE_NETIF_RX 1
 extern void		netif_rx(struct sk_buff *skb);
 extern void		net_bh(void);
@@ -273,7 +272,7 @@ extern __inline__ void  dev_unlock_list(void)
  *	This almost never occurs, isn't in performance critical paths
  *	and we can thus be relaxed about it
  */
- 
+
 extern __inline__ void dev_lock_wait(void)
 {
 	while(dev_lockct)

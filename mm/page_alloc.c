@@ -38,7 +38,7 @@ int nr_free_pages = 0;
 
 struct free_area_struct {
 	struct page list;
-	unsigned int * map;
+	unsigned int *map;
 };
 
 static struct free_area_struct free_area[NR_MEM_LISTS];
@@ -136,39 +136,42 @@ void free_pages(unsigned long addr, unsigned long order)
  */
 #define MARK_USED(index, order, area) \
 	change_bit((index) >> (1+(order)), (area)->map)
+
 #define CAN_DMA(x) (PageDMA(x))
+
 #define ADDRESS(x) (PAGE_OFFSET + ((x) << PAGE_SHIFT))
-#define RMQUEUE(order, dma) \
-do { struct free_area_struct * area = free_area+order; \
-     unsigned long new_order = order; \
-	do { struct page *prev = &area->list, *ret; \
-		while (&area->list != (ret = prev->next)) { \
-			if (!dma || CAN_DMA(ret)) { \
-				unsigned long map_nr = ret->map_nr; \
-				(prev->next = ret->next)->prev = prev; \
-				MARK_USED(map_nr, new_order, area); \
-				nr_free_pages -= 1 << order; \
-				EXPAND(ret, map_nr, order, new_order, area); \
-				restore_flags(flags); \
-				return ADDRESS(map_nr); \
-			} \
-			prev = ret; \
-		} \
-		new_order++; area++; \
-	} while (new_order < NR_MEM_LISTS); \
+
+#define RMQUEUE(order, dma) 									\
+do { struct free_area_struct * area = free_area+order; 			\
+	unsigned long new_order = order; 							\
+	do { struct page *prev = &area->list, *ret; 				\
+		while (&area->list != (ret = prev->next)) { 			\
+			if (!dma || CAN_DMA(ret)) { 						\
+				unsigned long map_nr = ret->map_nr; 			\
+				(prev->next = ret->next)->prev = prev; 			\
+				MARK_USED(map_nr, new_order, area); 			\
+				nr_free_pages -= 1 << order; 					\
+				EXPAND(ret, map_nr, order, new_order, area); 	\
+				restore_flags(flags); 							\
+				return ADDRESS(map_nr); 						\
+			} 													\
+			prev = ret; 										\
+		} 														\
+		new_order++; area++; 									\
+	} while (new_order < NR_MEM_LISTS); 						\
 } while (0)
 
-#define EXPAND(map,index,low,high,area) \
-do { unsigned long size = 1 << high; \
-	while (high > low) { \
-		area--; high--; size >>= 1; \
-		add_mem_queue(&area->list, map); \
-		MARK_USED(index, high, area); \
-		index += size; \
-		map += size; \
-	} \
-	map->count = 1; \
-	map->age = PAGE_INITIAL_AGE; \
+#define EXPAND(map,index,low,high,area) 	\
+do { unsigned long size = 1 << high; 		\
+	while (high > low) { 					\
+		area--; high--; size >>= 1; 		\
+		add_mem_queue(&area->list, map); 	\
+		MARK_USED(index, high, area); 		\
+		index += size; 						\
+		map += size; 						\
+	} 										\
+	map->count = 1; 						\
+	map->age = PAGE_INITIAL_AGE; 			\
 } while (0)
 
 unsigned long __get_free_pages(int priority, unsigned long order, int dma)
@@ -257,10 +260,10 @@ unsigned long free_area_init(unsigned long start_mem, unsigned long end_mem)
 	free_pages_low = i + (i>>1);
 	free_pages_high = i + i;
 	start_mem = init_swap_cache(start_mem, end_mem); // 交换缓存
-	mem_map = (mem_map_t *) start_mem; // 内存页地图(用于记录内存页的使用情况)
+	mem_map = (mem_map_t *)start_mem;                // 内存页地图(用于记录内存页的使用情况)
 	p = mem_map + MAP_NR(end_mem);
 	start_mem = LONG_ALIGN((unsigned long) p);
-	memset(mem_map, 0, start_mem - (unsigned long) mem_map); // 清空内存页地图
+	memset(mem_map, 0, start_mem - (unsigned long)mem_map); // 清空内存页地图
 	do {
 		--p;
 		p->flags = (1 << PG_DMA) | (1 << PG_reserved);
@@ -275,7 +278,7 @@ unsigned long free_area_init(unsigned long start_mem, unsigned long end_mem)
 		bitmap_size = (end_mem - PAGE_OFFSET) >> (PAGE_SHIFT + i);
 		bitmap_size = (bitmap_size + 7) >> 3;
 		bitmap_size = LONG_ALIGN(bitmap_size);
-		free_area[i].map = (unsigned int *) start_mem;
+		free_area[i].map = (unsigned int *)start_mem;
 		memset((void *) start_mem, 0, bitmap_size);
 		start_mem += bitmap_size;
 	}

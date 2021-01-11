@@ -774,7 +774,7 @@ asmlinkage void start_kernel(void)
  // 1) memory_start: 从内核影像的内存开始
  // 2) memory_end: 物理内存的大小
 	setup_arch(&command_line, &memory_start, &memory_end);
-	memory_start = paging_init(memory_start,memory_end);
+	memory_start = paging_init(memory_start, memory_end);
 	trap_init();
 	init_IRQ();
 	sched_init();

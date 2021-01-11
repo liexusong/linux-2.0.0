@@ -48,10 +48,10 @@ do { unsigned long tmpreg; __asm__ __volatile__("movl %%cr3,%0\n\tmovl %0,%%cr3"
 #define __flush_tlb_one(addr) \
 __asm__ __volatile__("invlpg %0": :"m" (*(char *) addr))
 #endif
- 
+
 #ifndef __SMP__
 
-#define flush_tlb() __flush_tlb()
+#define flush_tlb() 	__flush_tlb()
 #define flush_tlb_all() __flush_tlb()
 
 static inline void flush_tlb_mm(struct mm_struct *mm)
@@ -91,7 +91,7 @@ static inline void flush_tlb_range(struct mm_struct *mm,
 #ifdef CLEVER_SMP_INVALIDATE
 
 /*
- *	Smarter SMP flushing macros. 
+ *	Smarter SMP flushing macros.
  *		c/o Linus Torvalds.
  *
  *	These mean you can really definitely utterly forget about
@@ -100,7 +100,7 @@ static inline void flush_tlb_range(struct mm_struct *mm,
  *	Doesn't currently work as Linus makes flush tlb calls before
  *	stuff like current/current->mm are setup properly
  */
- 
+
 static inline void flush_tlb_current_task(void)
 {
 	if (current->mm->count == 1)	/* just one copy of this mm */
@@ -204,7 +204,7 @@ static inline void flush_tlb_range(struct mm_struct *mm,
  * of the Pentium details, but assuming intel did the straightforward
  * thing, this bit set in the page directory entry just means that
  * the page directory entry points directly to a 4MB-aligned block of
- * memory. 
+ * memory.
  */
 #define _PAGE_PRESENT	0x001
 #define _PAGE_RW	0x002
@@ -361,7 +361,7 @@ extern inline pmd_t * pmd_offset(pgd_t * dir, unsigned long address)
 	return (pmd_t *) dir;
 }
 
-/* Find an entry in the third-level page table.. */ 
+/* Find an entry in the third-level page table.. */
 extern inline pte_t * pte_offset(pmd_t * dir, unsigned long address)
 {
 	return (pte_t *) pmd_page(*dir) + ((address >> PAGE_SHIFT) & (PTRS_PER_PTE - 1));

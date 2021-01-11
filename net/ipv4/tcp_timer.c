@@ -34,7 +34,7 @@ void tcp_delack_timer(unsigned long data)
 /*
  *	Reset the retransmission timer
  */
- 
+
 void tcp_reset_xmit_timer(struct sock *sk, int why, unsigned long when)
 {
 	del_timer(&sk->retransmit_timer);
@@ -46,8 +46,7 @@ void tcp_reset_xmit_timer(struct sock *sk, int why, unsigned long when)
 		 * so we timeout from the current time.
 		 */
 		if (sk->send_head) {
-			sk->retransmit_timer.expires =
-				sk->send_head->when + when;
+			sk->retransmit_timer.expires = sk->send_head->when + when;
 		} else {
 			/* This should never happen!
 		 	 */
@@ -66,6 +65,7 @@ void tcp_reset_xmit_timer(struct sock *sk, int why, unsigned long when)
 		 */
 		sk->retransmit_timer.expires = jiffies+2;
 	}
+
 	add_timer(&sk->retransmit_timer);
 }
 
@@ -131,7 +131,7 @@ static void tcp_retransmit_time(struct sock *sk, int all)
 
 void tcp_retransmit(struct sock *sk, int all)
 {
-	if (all) 
+	if (all)
 	{
 		tcp_retransmit_time(sk, all);
 		return;
@@ -156,7 +156,7 @@ static int tcp_write_timeout(struct sock *sk)
 	 *	Look for a 'soft' timeout.
 	 */
 	if ((sk->state == TCP_ESTABLISHED && sk->retransmits && !(sk->retransmits & 7))
-		|| (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR1)) 
+		|| (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR1))
 	{
 		/*
 		 *	Attempt to recover if arp has changed (unlikely!) or
@@ -164,11 +164,11 @@ static int tcp_write_timeout(struct sock *sk)
 		 */
 		ip_rt_advice(&sk->ip_route_cache, 0);
 	}
-	
+
 	/*
 	 *	Have we tried to SYN too many times (repent repent 8))
 	 */
-	 
+
 	if(sk->retransmits > TCP_SYN_RETRIES && sk->state==TCP_SYN_SENT)
 	{
 		if(sk->err_soft)
@@ -185,7 +185,7 @@ static int tcp_write_timeout(struct sock *sk)
 	/*
 	 *	Has it gone just too far ?
 	 */
-	if (sk->retransmits > TCP_RETR2) 
+	if (sk->retransmits > TCP_RETR2)
 	{
 		if(sk->err_soft)
 			sk->err = sk->err_soft;
@@ -194,9 +194,9 @@ static int tcp_write_timeout(struct sock *sk)
 		sk->error_report(sk);
 		del_timer(&sk->retransmit_timer);
 		/*
-		 *	Time wait the socket 
+		 *	Time wait the socket
 		 */
-		if (sk->state == TCP_FIN_WAIT1 || sk->state == TCP_FIN_WAIT2 || sk->state == TCP_CLOSING ) 
+		if (sk->state == TCP_FIN_WAIT1 || sk->state == TCP_FIN_WAIT2 || sk->state == TCP_CLOSING )
 		{
 			tcp_set_state(sk,TCP_TIME_WAIT);
 			tcp_reset_msl_timer (sk, TIME_CLOSE, TCP_TIMEWAIT_LEN);
@@ -245,15 +245,15 @@ void tcp_retransmit_timer(unsigned long data)
 	/*
 	 *	We are reset. We will send no more retransmits.
 	 */
-	 
+
 	if(sk->zapped)
 		return;
-		
-	/* 
+
+	/*
 	 *	Only process if socket is not in use
 	 */
 
-	if (sk->users) 
+	if (sk->users)
 	{
 		/* Try again in 1 second */
 		sk->retransmit_timer.expires = jiffies+HZ;
@@ -261,12 +261,12 @@ void tcp_retransmit_timer(unsigned long data)
 		return;
 	}
 
-	if (sk->ack_backlog && !sk->dead) 
+	if (sk->ack_backlog && !sk->dead)
 		sk->data_ready(sk,0);
 
 	/* Now we need to figure out why the socket was on the timer. */
 
-	switch (why) 
+	switch (why)
 	{
 	/* Window probing */
 	case TIME_PROBE0:
@@ -281,7 +281,7 @@ void tcp_retransmit_timer(unsigned long data)
 
 	/* Sending Keepalives */
 	case TIME_KEEPOPEN:
-		/* 
+		/*
 		 * this reset_timer() call is a hack, this is not
 		 * how KEEPOPEN is supposed to work.
 		 */

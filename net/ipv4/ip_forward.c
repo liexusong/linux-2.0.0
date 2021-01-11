@@ -4,13 +4,13 @@
  *		interface as the means of communication with the user level.
  *
  *		The IP forwarding functionality.
- *		
+ *
  * Authors:	see ip.c
  *
  * Fixes:
- *		Many		:	Split from ip.c , see ip_input.c for 
+ *		Many		:	Split from ip.c , see ip_input.c for
  *					history.
- *		Dave Gregorich	:	NULL ip_rt_put fix for multicast 
+ *		Dave Gregorich	:	NULL ip_rt_put fix for multicast
  *					routing.
  *		Jos Vos		:	Add call_out_firewall before sending,
  *					use output device for accounting.
@@ -39,7 +39,7 @@
 #include <net/checksum.h>
 #include <linux/route.h>
 #include <net/route.h>
- 
+
 #ifdef CONFIG_IP_FORWARD
 #ifdef CONFIG_IP_MROUTE
 
@@ -48,7 +48,7 @@
  *	This avoids tunnel drivers and other mess and gives us the speed so
  *	important for multicast video.
  */
- 
+
 static void ip_encap(struct sk_buff *skb, int len, struct device *out, __u32 daddr)
 {
 	/*
@@ -90,8 +90,8 @@ static void ip_encap(struct sk_buff *skb, int len, struct device *out, __u32 dad
  *	Forward an IP datagram to its next destination.
  */
 
-int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
-	       __u32 target_addr)
+int
+ip_forward(struct sk_buff *skb, struct device *dev, int is_frag, __u32 target_addr)
 {
 	struct device *dev2;	/* Output device */
 	struct iphdr *iph;	/* Our header */
@@ -99,16 +99,16 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 	struct rtable *rt;	/* Route we use */
 	unsigned char *ptr;	/* Data pointer */
 	unsigned long raddr;	/* Router IP address */
-	struct   options * opt	= (struct options*)skb->proto_priv;
+	struct options *opt = (struct options*)skb->proto_priv;
 	struct hh_cache *hh = NULL;
 	int encap = 0;		/* Encap length */
 #ifdef CONFIG_FIREWALL
-	int fw_res = 0;		/* Forwarding result */	
-#ifdef CONFIG_IP_MASQUERADE	
+	int fw_res = 0;		/* Forwarding result */
+#ifdef CONFIG_IP_MASQUERADE
 	struct sk_buff *skb_in = skb;	/* So we can remember if the masquerader did some swaps */
 #endif /* CONFIG_IP_MASQUERADE */
 #endif /* CONFIG_FIREWALL */
-	
+
 	/*
 	 *	According to the RFC, we must first decrease the TTL field. If
 	 *	that reaches zero, we must reply an ICMP control message telling
@@ -131,7 +131,7 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 
 	iph->check = ntohs(iph->check) + 0x0100;
 	if ((iph->check & 0xFF00) == 0)
-		iph->check++;		/* carry overflow */
+		iph->check++;  /* carry overflow */
 	iph->check = htons(iph->check);
 
 	if (iph->ttl <= 0)
@@ -144,16 +144,14 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 #ifdef CONFIG_IP_MROUTE
 	if(!(is_frag&IPFWD_MULTICASTING))
 	{
-#endif	
+#endif
 		/*
 		 * OK, the packet is still valid.  Fetch its destination address,
 		 * and give it to the IP sender for further processing.
 		 */
 
 		rt = ip_rt_route(target_addr, 0);
-
-		if (rt == NULL)
-		{
+		if (rt == NULL) {
 			/*
 			 *	Tell the sender its packet cannot be delivered. Again
 			 *	ICMP is screened later.
@@ -161,8 +159,7 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 			icmp_send(skb, ICMP_DEST_UNREACH, ICMP_NET_UNREACH, 0, dev);
 			return -1;
 		}
-	
-	
+
 		/*
 		 * Gosh.  Not only is the packet valid; we even know how to
 		 * forward it onto its final destination.  Can we say this
@@ -172,12 +169,12 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 		 */
 
 		raddr = rt->rt_gateway;
-	
+
 		if (opt->is_strictroute && (rt->rt_flags & RTF_GATEWAY)) {
 			/*
 			 *	Strict routing permits no gatewaying
 			 */
-	
+
 			ip_rt_put(rt);
 			icmp_send(skb, ICMP_DEST_UNREACH, ICMP_SR_FAILED, 0, dev);
 			return -1;
@@ -191,15 +188,15 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 		dev2 = rt->rt_dev;
 		hh = rt->rt_hh;
 		/*
-		 *	In IP you never have to forward a frame on the interface that it 
+		 *	In IP you never have to forward a frame on the interface that it
 		 *	arrived upon. We now generate an ICMP HOST REDIRECT giving the route
 		 *	we calculated.
 		 */
 #ifndef CONFIG_IP_NO_ICMP_REDIRECT
-		if (dev == dev2 && 
+		if (dev == dev2 &&
 			!((iph->saddr^dev->pa_addr)&dev->pa_mask) &&
 			/* The daddr!=raddr test isn't obvious - what it's doing
-			   is avoiding sending a frame the receiver will not 
+			   is avoiding sending a frame the receiver will not
 			   believe anyway.. */
 			iph->daddr != raddr/*ANK*/ && !opt->srr)
 				icmp_send(skb, ICMP_REDIRECT, ICMP_REDIR_HOST, raddr, dev);
@@ -217,19 +214,19 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 			encap=20;
 		rt=NULL;
 	}
-#endif	
-	
-	/* 
+#endif
+
+	/*
 	 *	See if we are allowed to forward this.
  	 *	Note: demasqueraded fragments are always 'back'warded.
 	 */
-	
+
 #ifdef CONFIG_FIREWALL
 	if(!(is_frag&IPFWD_MASQUERADED))
 	{
 #ifdef CONFIG_IP_MASQUERADE
-		/* 
-		 *	Check that any ICMP packets are not for a 
+		/*
+		 *	Check that any ICMP packets are not for a
 		 *	masqueraded connection.  If so rewrite them
 		 *	and skip the firewall checks
 		 */
@@ -258,7 +255,7 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 
 #ifdef CONFIG_IP_MASQUERADE
 		skip_call_fw_firewall:
-#endif		
+#endif
 	}
 #endif
 
@@ -287,7 +284,7 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 #endif
 		IS_SKB(skb);
 
-		if (skb->len+encap > dev2->mtu && (ntohs(iph->frag_off) & IP_DF)) 
+		if (skb->len+encap > dev2->mtu && (ntohs(iph->frag_off) & IP_DF))
 		{
 			ip_statistics.IpFragFails++;
 			icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED, htonl(dev2->mtu), dev);
@@ -304,12 +301,12 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 		if(skb_headroom(skb)<dev2->hard_header_len)
 		{
 			skb2 = alloc_skb(dev2->hard_header_len + skb->len + 15, GFP_ATOMIC);
-#endif		
+#endif
 			/*
 			 *	This is rare and since IP is tolerant of network failures
 			 *	quite harmless.
 			 */
-		
+
 			if (skb2 == NULL)
 			{
 				NETDEBUG(printk("\nIP: No memory available for IP forward\n"));
@@ -317,7 +314,7 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 					ip_rt_put(rt);
 				return -1;
 			}
-		
+
 			IS_SKB(skb2);
 			/*
 			 *	Add the physical headers.
@@ -330,14 +327,14 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 				ip_encap(skb2,skb->len, dev2, raddr);
 			}
 			else
-#endif			
+#endif
 		 		ip_send(rt,skb2,raddr,skb->len,dev2,dev2->pa_addr);
 
 			/*
 			 *	We have to copy the bytes over as the new header wouldn't fit
 			 *	the old buffer. This should be very rare.
-			 */		 
-		 	
+			 */
+
 			ptr = skb_put(skb2,skb->len);
 			skb2->free = 1;
 			skb2->h.raw = ptr;
@@ -351,11 +348,11 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 		}
 		else
 		{
-			/* 
-			 *	Build a new MAC header. 
+			/*
+			 *	Build a new MAC header.
 			 */
 
-			skb2 = skb;		
+			skb2 = skb;
 			skb2->dev=dev2;
 #ifdef CONFIG_IP_MROUTE
 			if(is_frag&IPFWD_MULTITUNNEL)
@@ -372,7 +369,7 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 					{
 #if RT_CACHE_DEBUG >= 2
 						printk("ip_forward: hh miss %08x via %08x\n", target_addr, rt->rt_gateway);
-#endif						
+#endif
 						skb->arp = 0;
 					}
 				}
@@ -382,8 +379,8 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 						skb->arp=0;
 				}
 #ifdef CONFIG_IP_MROUTE
-			}				
-#endif			
+			}
+#endif
 		}
 #ifdef CONFIG_FIREWALL
 		if((fw_res = call_out_firewall(PF_INET, skb2->dev, iph, NULL)) < FW_ACCEPT)
@@ -399,16 +396,16 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 #endif
 		ip_statistics.IpForwDatagrams++;
 
-		if (opt->optlen) 
+		if (opt->optlen)
 		{
 			unsigned char * optptr;
-			if (opt->rr_needaddr) 
+			if (opt->rr_needaddr)
 			{
 				optptr = (unsigned char *)iph + opt->rr;
 				memcpy(&optptr[optptr[2]-5], &dev2->pa_addr, 4);
 				opt->is_changed = 1;
 			}
-			if (opt->srr_is_hit) 
+			if (opt->srr_is_hit)
 			{
 				int srrptr, srrspace;
 
@@ -417,14 +414,14 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 				for ( srrptr=optptr[2], srrspace = optptr[1];
 				      srrptr <= srrspace;
 				     srrptr += 4
-				    ) 
+				    )
 				{
 					if (srrptr + 3 > srrspace)
 						break;
 					if (memcmp(&target_addr, &optptr[srrptr-1], 4) == 0)
 						break;
 				}
-				if (srrptr + 3 <= srrspace) 
+				if (srrptr + 3 <= srrspace)
 				{
 					opt->is_changed = 1;
 					memcpy(&optptr[srrptr-1], &dev2->pa_addr, 4);
@@ -434,13 +431,13 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 				else
 				        printk(KERN_CRIT "ip_forward(): Argh! Destination lost!\n");
 			}
-			if (opt->ts_needaddr) 
+			if (opt->ts_needaddr)
 			{
 				optptr = (unsigned char *)iph + opt->ts;
 				memcpy(&optptr[optptr[2]-9], &dev2->pa_addr, 4);
 				opt->is_changed = 1;
 			}
-			if (opt->is_changed) 
+			if (opt->is_changed)
 			{
 				opt->is_changed = 0;
 				ip_send_check(iph);
@@ -464,14 +461,14 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 		}
 		else
 		{
-#ifdef CONFIG_IP_ACCT		
+#ifdef CONFIG_IP_ACCT
 			/*
 			 *	Count mapping we shortcut
 			 */
-			 
+
 			ip_fw_chk(iph,dev2,NULL,ip_acct_chain,0,IP_FW_MODE_ACCT_OUT);
-#endif			
-			
+#endif
+
 			/*
 			 *	Map service types to priority. We lie about
 			 *	throughput being low priority, but it's a good
@@ -493,15 +490,15 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 	}
 	if(rt)
 		ip_rt_put(rt);
-	
+
 	/*
 	 *	Tell the caller if their buffer is free.
-	 */	 
-	 
-	if(skb==skb2)
-		return 0;	
+	 */
 
-#ifdef CONFIG_IP_MASQUERADE	
+	if(skb==skb2)
+		return 0;
+
+#ifdef CONFIG_IP_MASQUERADE
 	/*
 	 *	The original is free. Free our copy and
 	 *	tell the caller not to free.
@@ -511,7 +508,7 @@ int ip_forward(struct sk_buff *skb, struct device *dev, int is_frag,
 		kfree_skb(skb_in, FREE_WRITE);
 		return 0;
 	}
-#endif	
+#endif
 	return 1;
 }
 
