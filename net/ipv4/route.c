@@ -83,12 +83,12 @@
 
 struct fib_node
 {
-    struct fib_node   *fib_next;
-    __u32             fib_dst;
-    unsigned long     fib_use;
-    struct fib_info   *fib_info;
+    struct fib_node   *fib_next; // 指向下一个fib_node
+    __u32             fib_dst;   // 目的IP地址
+    unsigned long     fib_use;   // 使用计数器
+    struct fib_info   *fib_info; // FIB信息
     short             fib_metric;
-    unsigned char     fib_tos;
+    unsigned char     fib_tos;   // 服务类型
 };
 
 /*
@@ -110,11 +110,11 @@ struct fib_info
 
 struct fib_zone
 {
-    struct fib_zone    *fz_next;
-    struct fib_node    **fz_hash_table;
-    struct fib_node    *fz_list;
+    struct fib_zone    *fz_next;        // 指向下一个fib_zone
+    struct fib_node    **fz_hash_table; // fib_node的hash表
+    struct fib_node    *fz_list;        // 连接fib_node
     int                fz_nent;
-    int                fz_logmask;
+    int                fz_logmask;      // fz_hash_table的大小
     __u32              fz_mask;
 };
 
@@ -127,9 +127,9 @@ static struct fib_info *fib_info_list;
  * Backlogging.
  */
 
-#define RT_BH_REDIRECT        0
-#define RT_BH_GARBAGE_COLLECT     1
-#define RT_BH_FREE         2
+#define RT_BH_REDIRECT          0
+#define RT_BH_GARBAGE_COLLECT   1
+#define RT_BH_FREE              2
 
 struct rt_req
 {
@@ -146,6 +146,7 @@ static struct rt_req *rt_backlog;
 
 /*
  * Route cache.
+ * 路由缓存
  */
 
 struct rtable *ip_rt_hash_table[RT_HASH_DIVISOR];
@@ -508,6 +509,7 @@ fib_add_1(short flags, __u32 dst,
         return;
 
     memset(f, 0, sizeof(struct fib_node));
+
     f->fib_dst = dst;
     f->fib_metric = metric;
     f->fib_tos = 0;
@@ -520,9 +522,8 @@ fib_add_1(short flags, __u32 dst,
     f->fib_info = fi;
 
     logmask = rt_logmask(mask);
+
     fz = fib_zones[logmask];
-
-
     if (!fz) {
         int i;
         fz = kmalloc(sizeof(struct fib_zone), GFP_KERNEL);
@@ -558,7 +559,9 @@ fib_add_1(short flags, __u32 dst,
      * If zone overgrows RTZ_HASHING_LIMIT, create hash table.
      */
 
-    if (fz->fz_nent >= RTZ_HASHING_LIMIT && !fz->fz_hash_table && logmask<32) {
+    if (fz->fz_nent >= RTZ_HASHING_LIMIT
+        && !fz->fz_hash_table && logmask < 32)
+    {
         struct fib_node ** ht;
 #if 0
         printk("fib_add_1: hashing for zone %d started\n", logmask);
@@ -566,9 +569,10 @@ fib_add_1(short flags, __u32 dst,
         ht = kmalloc(RTZ_HASH_DIVISOR*sizeof(struct rtable*), GFP_KERNEL);
         if (ht) {
             memset(ht, 0, RTZ_HASH_DIVISOR*sizeof(struct fib_node*));
-            cli();
 
+            cli();
             f1 = fz->fz_list;
+
             while (f1) {
                 struct fib_node * next;
                 unsigned hash = fz_hash_code(f1->fib_dst, logmask);
@@ -745,72 +749,86 @@ int rt_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 
     pos = 128;
 
-    if (offset<128)
-    {
-        sprintf(buffer,"%-127s\n","Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT");
-        len = 128;
-      }
+    if (offset < 128) {
+        sprintf(buffer,
+                "%-127s\n",
+                "Iface\t"
+                "Destination\t"
+                "Gateway \t"
+                "Flags\t"
+                "RefCnt\t"
+                "Use\t"
+                "Metric\t"
+                "Mask\t\t"
+                "MTU\t"
+                "Window\t"
+                "IRTT");
 
-    while  (ip_rt_lock)
+        len = 128;
+    }
+
+    while (ip_rt_lock)
         sleep_on(&rt_wait);
+
     ip_rt_fast_lock();
 
-    for (fz=fib_zone_list; fz; fz = fz->fz_next)
-    {
+    for (fz=fib_zone_list; fz; fz = fz->fz_next) {
         int maxslot;
         struct fib_node ** fp;
 
         if (fz->fz_nent == 0)
             continue;
 
-        if (pos + 128*fz->fz_nent <= offset)
-        {
+        if (pos + 128*fz->fz_nent <= offset) {
             pos += 128*fz->fz_nent;
             len = 0;
             continue;
         }
 
-        if (fz->fz_hash_table)
-        {
+        if (fz->fz_hash_table) {
             maxslot = RTZ_HASH_DIVISOR;
-            fp    = fz->fz_hash_table;
-        }
-        else
-        {
-            maxslot    = 1;
-            fp    = &fz->fz_list;
+            fp = fz->fz_hash_table;
+        } else {
+            maxslot = 1;
+            fp = &fz->fz_list;
         }
 
-        for (i=0; i < maxslot; i++, fp++)
-        {
-
-            for (f = *fp; f; f = f->fib_next)
-            {
+        for (i=0; i < maxslot; i++, fp++) {
+            for (f = *fp; f; f = f->fib_next) {
                 struct fib_info * fi;
                 /*
                  *    Spin through entries until we are ready
                  */
                 pos += 128;
 
-                if (pos <= offset)
-                {
+                if (pos <= offset) {
                     len=0;
                     continue;
                 }
 
                 fi = f->fib_info;
+
                 sprintf(temp, "%s\t%08lX\t%08lX\t%02X\t%d\t%lu\t%d\t%08lX\t%d\t%lu\t%u",
-                    fi->fib_dev->name, (unsigned long)f->fib_dst, (unsigned long)fi->fib_gateway,
-                    fi->fib_flags, 0, f->fib_use, f->fib_metric,
-                    (unsigned long)fz->fz_mask, (int)fi->fib_mtu, fi->fib_window, (int)fi->fib_irtt);
-                sprintf(buffer+len,"%-127s\n",temp);
+                        fi->fib_dev->name,
+                        (unsigned long)f->fib_dst,
+                        (unsigned long)fi->fib_gateway,
+                        fi->fib_flags,
+                        0,
+                        f->fib_use,
+                        f->fib_metric,
+                        (unsigned long)fz->fz_mask,
+                        (int)fi->fib_mtu,
+                        fi->fib_window,
+                        (int)fi->fib_irtt);
+
+                sprintf(buffer+len, "%-127s\n", temp);
 
                 len += 128;
                 if (pos >= offset+length)
                     goto done;
             }
         }
-        }
+    }
 
 done:
     ip_rt_unlock();
@@ -833,42 +851,65 @@ int rt_cache_get_info(char *buffer, char **start, off_t offset, int length, int 
 
     pos = 128;
 
-    if (offset<128)
-    {
-        sprintf(buffer,"%-127s\n","Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tSource\t\tMTU\tWindow\tIRTT\tHH\tARP");
+    if (offset < 128) {
+        sprintf(buffer,
+                "%-127s\n",
+                "Iface\t"
+                "Destination\t"
+                "Gateway \t"
+                "Flags\t"
+                "RefCnt\t"
+                "Use\t"
+                "Metric\t"
+                "Source\t\t"
+                "MTU\t"
+                "Window\t"
+                "IRTT\t"
+                "HH\t"
+                "ARP");
+
         len = 128;
-      }
+    }
 
 
     while  (ip_rt_lock)
         sleep_on(&rt_wait);
     ip_rt_fast_lock();
 
-    for (i = 0; i<RT_HASH_DIVISOR; i++)
-    {
-        for (r = ip_rt_hash_table[i]; r; r = r->rt_next)
-        {
+    for (i = 0; i<RT_HASH_DIVISOR; i++) {
+        for (r = ip_rt_hash_table[i]; r; r = r->rt_next) {
             /*
              *    Spin through entries until we are ready
              */
             pos += 128;
 
-            if (pos <= offset)
-            {
+            if (pos <= offset) {
                 len = 0;
                 continue;
             }
 
             sprintf(temp, "%s\t%08lX\t%08lX\t%02X\t%d\t%u\t%d\t%08lX\t%d\t%lu\t%u\t%d\t%1d",
-                r->rt_dev->name, (unsigned long)r->rt_dst, (unsigned long)r->rt_gateway,
-                r->rt_flags, r->rt_refcnt, r->rt_use, 0,
-                (unsigned long)r->rt_src, (int)r->rt_mtu, r->rt_window, (int)r->rt_irtt, r->rt_hh ? r->rt_hh->hh_refcnt : -1, r->rt_hh ? r->rt_hh->hh_uptodate : 0);
-            sprintf(buffer+len,"%-127s\n",temp);
+                    r->rt_dev->name,
+                    (unsigned long)r->rt_dst,
+                    (unsigned long)r->rt_gateway,
+                    r->rt_flags,
+                    r->rt_refcnt,
+                    r->rt_use,
+                    0,
+                    (unsigned long)r->rt_src,
+                    (int)r->rt_mtu,
+                    r->rt_window,
+                    (int)r->rt_irtt,
+                    r->rt_hh ? r->rt_hh->hh_refcnt : -1,
+                    r->rt_hh ? r->rt_hh->hh_uptodate : 0);
+
+            sprintf(buffer+len, "%-127s\n", temp);
+
             len += 128;
             if (pos >= offset+length)
                 goto done;
         }
-        }
+    }
 
 done:
     ip_rt_unlock();
@@ -918,10 +959,8 @@ static __inline__ void rt_kick_free_queue(void)
 
     rtp = &rt_free_queue;
 
-    while ((rt = *rtp) != NULL)
-    {
-        if  (!rt->rt_refcnt)
-        {
+    while ((rt = *rtp) != NULL) {
+        if  (!rt->rt_refcnt) {
             struct hh_cache * hh = rt->rt_hh;
 #if 0
             __u32 daddr = rt->rt_dst;
@@ -929,8 +968,10 @@ static __inline__ void rt_kick_free_queue(void)
             *rtp = rt->rt_next;
             rt->rt_hh = NULL;
             sti();
+
             if (hh && atomic_dec_and_test(&hh->hh_refcnt))
                 kfree_s(hh, sizeof(struct hh_cache));
+
             kfree_s(rt, sizeof(struct rt_table));
 #if 0
             printk("rt_kick_free_queue: %08x is free\n", daddr);
@@ -947,13 +988,11 @@ void ip_rt_run_bh()
     unsigned long flags;
     save_flags(flags);
     cli();
-    if (ip_rt_bh_mask && !ip_rt_lock)
-    {
+    if (ip_rt_bh_mask && !ip_rt_lock) {
         if (ip_rt_bh_mask & RT_BH_REDIRECT)
             rt_kick_backlog();
 
-        if (ip_rt_bh_mask & RT_BH_GARBAGE_COLLECT)
-        {
+        if (ip_rt_bh_mask & RT_BH_GARBAGE_COLLECT) {
             ip_rt_fast_lock();
             ip_rt_bh_mask &= ~RT_BH_GARBAGE_COLLECT;
             sti();
@@ -972,20 +1011,17 @@ void ip_rt_run_bh()
 void ip_rt_check_expire()
 {
     ip_rt_fast_lock();
-    if (ip_rt_lock == 1)
-    {
+    if (ip_rt_lock == 1) {
         int i;
         struct rtable *rth, **rthp;
         unsigned long flags;
         unsigned long now = jiffies;
 
         save_flags(flags);
-        for (i = 0; i < RT_HASH_DIVISOR; i++)
-        {
+        for (i = 0; i < RT_HASH_DIVISOR; i++) {
             rthp = &ip_rt_hash_table[i];
 
-            while ((rth = *rthp) != NULL)
-            {
+            while ((rth = *rthp) != NULL) {
                 struct rtable *rth_next = rth->rt_next;
 
                 /*
@@ -993,7 +1029,8 @@ void ip_rt_check_expire()
                  */
 
                 cli();
-                if (!rth->rt_refcnt && rth->rt_lastuse + RT_CACHE_TIMEOUT < now)
+                if (!rth->rt_refcnt
+                    && rth->rt_lastuse + RT_CACHE_TIMEOUT < now)
                 {
                     *rthp = rth_next;
                     sti();
@@ -1038,11 +1075,14 @@ static void rt_redirect_1(__u32 dst, __u32 gw, struct device *dev)
 
     if (gw == dev->pa_addr)
         return;
+
     if (dev != get_gw_dev(gw))
         return;
+
     rt = (struct rtable *) kmalloc(sizeof(struct rtable), GFP_ATOMIC);
     if (rt == NULL)
         return;
+
     memset(rt, 0, sizeof(struct rtable));
     rt->rt_flags = RTF_DYNAMIC | RTF_MODIFIED | RTF_HOST | RTF_GATEWAY | RTF_UP;
     rt->rt_dst = dst;
@@ -1066,13 +1106,11 @@ static void rt_cache_flush(void)
     int i;
     struct rtable * rth, * next;
 
-    for (i=0; i<RT_HASH_DIVISOR; i++)
-    {
+    for (i = 0; i < RT_HASH_DIVISOR; i++) {
         int nr=0;
 
         cli();
-        if (!(rth = ip_rt_hash_table[i]))
-        {
+        if (!(rth = ip_rt_hash_table[i])) {
             sti();
             continue;
         }
@@ -1080,8 +1118,7 @@ static void rt_cache_flush(void)
         ip_rt_hash_table[i] = NULL;
         sti();
 
-        for (; rth; rth=next)
-        {
+        for (; rth; rth=next) {
             next = rth->rt_next;
             rt_cache_size--;
             nr++;
@@ -1109,27 +1146,31 @@ static void rt_garbage_collect_1(void)
     struct rtable * rth, **rthp;
     unsigned long now = jiffies;
 
-    for (;;)
-    {
-        for (i=0; i<RT_HASH_DIVISOR; i++)
-        {
+    for (;;) {
+        for (i = 0; i<RT_HASH_DIVISOR; i++) {
             if (!ip_rt_hash_table[i])
                 continue;
-            for (rthp=&ip_rt_hash_table[i]; (rth=*rthp); rthp=&rth->rt_next)
+
+            for (rthp = &ip_rt_hash_table[i];
+                 (rth = *rthp);
+                 rthp = &rth->rt_next)
             {
                 if (rth->rt_lastuse + expire*(rth->rt_refcnt+1) > now)
                     continue;
+
                 rt_cache_size--;
                 cli();
-                *rthp=rth->rt_next;
+                *rthp = rth->rt_next;
                 rth->rt_next = NULL;
                 sti();
                 rt_free(rth);
                 break;
             }
         }
+
         if (rt_cache_size < RT_CACHE_SIZE_MAX)
             return;
+
         expire >>= 1;
     }
 }
@@ -1144,8 +1185,7 @@ static __inline__ void rt_req_enqueue(struct rt_req **q, struct rt_req *rtr)
     tail = *q;
     if (!tail)
         rtr->rtr_next = rtr;
-    else
-    {
+    else {
         rtr->rtr_next = tail->rtr_next;
         tail->rtr_next = rtr;
     }
@@ -1162,12 +1202,13 @@ static __inline__ struct rt_req * rt_req_dequeue(struct rt_req **q)
 {
     struct rt_req * rtr;
 
-    if (*q)
-    {
+    if (*q) {
         rtr = (*q)->rtr_next;
+
         (*q)->rtr_next = rtr->rtr_next;
         if (rtr->rtr_next == rtr)
             *q = NULL;
+
         rtr->rtr_next = NULL;
         return rtr;
     }
@@ -1180,14 +1221,12 @@ static __inline__ struct rt_req * rt_req_dequeue(struct rt_req **q)
 
 static void rt_kick_backlog()
 {
-    if (!ip_rt_lock)
-    {
+    if (!ip_rt_lock) {
         struct rt_req * rtr;
 
         ip_rt_fast_lock();
 
-        while ((rtr = rt_req_dequeue(&rt_backlog)) != NULL)
-        {
+        while ((rtr = rt_req_dequeue(&rt_backlog)) != NULL) {
             sti();
             rt_redirect_1(rtr->dst, rtr->gw, rtr->dev);
             kfree_s(rtr, sizeof(struct rt_req));
@@ -1204,30 +1243,44 @@ static void rt_kick_backlog()
  * rt_{del|add|flush} called only from USER process. Waiting is OK.
  */
 
-static int rt_del(__u32 dst, __u32 mask,
-                  struct device * dev, __u32 gtw,
-                  short rt_flags, short metric)
+static int rt_del(__u32 dst,
+                  __u32 mask,
+                  struct device *dev,
+                  __u32 gtw,
+                  short rt_flags,
+                  short metric)
 {
     int retval;
 
     while (ip_rt_lock)
         sleep_on(&rt_wait);
+
     ip_rt_fast_lock();
     retval = fib_del_1(dst, mask, dev, gtw, rt_flags, metric);
     ip_rt_unlock();
+
     wake_up(&rt_wait);
+
     return retval;
 }
 
-static void rt_add(short flags, __u32 dst, __u32 mask,
-    __u32 gw, struct device *dev, unsigned short mss,
-    unsigned long window, unsigned short irtt, short metric)
+static void rt_add(short flags,
+                   __u32 dst,
+                   __u32 mask,
+                   __u32 gw,
+                   struct device *dev,
+                   unsigned short mss,
+                   unsigned long window,
+                   unsigned short irtt,
+                   short metric)
 {
     while (ip_rt_lock)
         sleep_on(&rt_wait);
+
     ip_rt_fast_lock();
     fib_add_1(flags, dst, mask, gw, dev, mss, window, irtt, metric);
     ip_rt_unlock();
+
     wake_up(&rt_wait);
 }
 
@@ -1235,9 +1288,11 @@ void ip_rt_flush(struct device *dev)
 {
     while (ip_rt_lock)
         sleep_on(&rt_wait);
+
     ip_rt_fast_lock();
     fib_flush_1(dev);
     ip_rt_unlock();
+
     wake_up(&rt_wait);
 }
 
@@ -1254,41 +1309,41 @@ void ip_rt_redirect(__u32 src, __u32 dst, __u32 gw, struct device *dev)
     if (!rt)
         return;
 
-    if (rt->rt_gateway != src ||
-        rt->rt_dev != dev ||
-        ((gw^dev->pa_addr)&dev->pa_mask) ||
-        ip_chk_addr(gw))
+    if (rt->rt_gateway != src
+        || rt->rt_dev != dev
+        || ((gw^dev->pa_addr)&dev->pa_mask)
+        || ip_chk_addr(gw))
     {
         ip_rt_put(rt);
         return;
     }
+
     ip_rt_put(rt);
 
     ip_rt_fast_lock();
-    if (ip_rt_lock == 1)
-    {
+
+    if (ip_rt_lock == 1) {
         rt_redirect_1(dst, gw, dev);
         ip_rt_unlock();
         return;
     }
 
     rtr = kmalloc(sizeof(struct rt_req), GFP_ATOMIC);
-    if (rtr)
-    {
+    if (rtr) {
         rtr->dst = dst;
         rtr->gw = gw;
         rtr->dev = dev;
         rt_req_enqueue(&rt_backlog, rtr);
         ip_rt_bh_mask |= RT_BH_REDIRECT;
     }
+
     ip_rt_unlock();
 }
 
 
 static __inline__ void rt_garbage_collect(void)
 {
-    if (ip_rt_lock == 1)
-    {
+    if (ip_rt_lock == 1) {
         rt_garbage_collect_1();
         return;
     }
@@ -1312,23 +1367,19 @@ static void rt_cache_add(unsigned hash, struct rtable * rth)
 
     save_flags(flags);
 
-    if (rth->rt_dev->header_cache_bind)
-    {
+    if (rth->rt_dev->header_cache_bind) {
         struct rtable * rtg = rth;
 
-        if (rth->rt_gateway != daddr)
-        {
+        if (rth->rt_gateway != daddr) {
             ip_rt_fast_unlock();
             rtg = ip_rt_route(rth->rt_gateway, 0);
             ip_rt_fast_lock();
         }
 
-        if (rtg)
-        {
+        if (rtg) {
             if (rtg == rth)
                 rtg->rt_dev->header_cache_bind(&rtg->rt_hh, rtg->rt_dev, ETH_P_IP, rtg->rt_dst);
-            else
-            {
+            else {
                 if (rtg->rt_hh)
                     atomic_inc(&rtg->rt_hh->hh_refcnt);
                 rth->rt_hh = rtg->rt_hh;
@@ -1361,11 +1412,11 @@ static void rt_cache_add(unsigned hash, struct rtable * rth)
      * Cleanup duplicate (and aged off) entries.
      */
 
-    while ((rth = *rthp) != NULL)
-    {
-
+    while ((rth = *rthp) != NULL) {
         cli();
-        if ((!rth->rt_refcnt && rth->rt_lastuse + RT_CACHE_TIMEOUT < now)
+
+        if ((!rth->rt_refcnt
+                && rth->rt_lastuse + RT_CACHE_TIMEOUT < now)
             || rth->rt_dst == daddr)
         {
             *rthp = rth->rt_next;
@@ -1377,9 +1428,12 @@ static void rt_cache_add(unsigned hash, struct rtable * rth)
             rt_free(rth);
             continue;
         }
+
         sti();
+
         rthp = &rth->rt_next;
     }
+
     restore_flags(flags);
 }
 
@@ -1629,8 +1683,7 @@ int ip_rt_new(struct rtentry *r)
      *    Add the route
      */
 
-    rt_add(flags, daddr, mask, gw, dev, r->rt_mss,
-           r->rt_window, r->rt_irtt, metric);
+    rt_add(flags, daddr, mask, gw, dev, r->rt_mss, r->rt_window, r->rt_irtt, metric);
 
     return 0;
 }
@@ -1691,10 +1744,13 @@ int ip_rt_ioctl(unsigned int cmd, void *arg)
     case SIOCDELRT:        /* Delete a route */
         if (!suser())
             return -EPERM;
+
         err = verify_area(VERIFY_READ, arg, sizeof(struct rtentry));
         if (err)
             return err;
+
         memcpy_fromfs(&rt, arg, sizeof(struct rtentry));
+
         return (cmd == SIOCDELRT) ? ip_rt_kill(&rt) : ip_rt_new(&rt);
     }
 
