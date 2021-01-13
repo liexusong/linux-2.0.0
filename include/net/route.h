@@ -62,22 +62,22 @@
 #define RTF_LOCAL 0x8000
 #endif
 
-struct rtable 
+struct rtable
 {
-	struct rtable		*rt_next;
+	struct rtable	*rt_next;
 	__u32			rt_dst;
 	__u32			rt_src;
 	__u32			rt_gateway;
 	atomic_t		rt_refcnt;
 	atomic_t		rt_use;
-	unsigned long		rt_window;
+	unsigned long	rt_window;
 	atomic_t		rt_lastuse;
-	struct hh_cache		*rt_hh;
-	struct device		*rt_dev;
-	unsigned short		rt_flags;
-	unsigned short		rt_mtu;
-	unsigned short		rt_irtt;
-	unsigned char		rt_tos;
+	struct hh_cache	*rt_hh;
+	struct device	*rt_dev;
+	unsigned short	rt_flags;
+	unsigned short	rt_mtu;
+	unsigned short	rt_irtt;
+	unsigned char	rt_tos;
 };
 
 extern void		ip_rt_flush(struct device *dev);
@@ -91,10 +91,10 @@ extern int		ip_rt_new(struct rtentry *rt);
 extern int		ip_rt_kill(struct rtentry *rt);
 extern void		ip_rt_check_expire(void);
 extern void		ip_rt_advice(struct rtable **rp, int advice);
-
 extern void		ip_rt_run_bh(void);
+
 extern atomic_t	    	ip_rt_lock;
-extern unsigned		ip_rt_bh_mask;
+extern unsigned			ip_rt_bh_mask;
 extern struct rtable 	*ip_rt_hash_table[RT_HASH_DIVISOR];
 
 extern __inline__ void ip_rt_fast_lock(void)
@@ -171,7 +171,7 @@ extern __inline__ struct rtable * ip_check_route(struct rtable ** rp,
 		*rp = rt;
 	}
 	return rt;
-}	
+}
 
 
 #endif	/* _ROUTE_H */

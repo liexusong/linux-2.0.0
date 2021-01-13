@@ -26,9 +26,8 @@
  * if we originate this datagram.
  */
 
-void ip_options_build(struct sk_buff * skb, struct options * opt,
-			    __u32 daddr, __u32 saddr,
-			    int is_frag)
+void ip_options_build(struct sk_buff *skb, struct options *opt,
+					  __u32 daddr, __u32 saddr, int is_frag)
 {
 	unsigned char * iph = (unsigned char*)skb->ip_hdr;
 
@@ -70,9 +69,8 @@ void ip_options_build(struct sk_buff * skb, struct options * opt,
 	}
 }
 
-int ip_options_echo(struct options * dopt, struct options * sopt,
-		     __u32 daddr, __u32 saddr,
-		     struct sk_buff * skb)
+int ip_options_echo(struct options *dopt, struct options *sopt,
+					__u32 daddr, __u32 saddr, struct sk_buff *skb)
 {
 	unsigned char *sptr, *dptr;
 	int soffset, doffset;

@@ -425,26 +425,25 @@ extern __inline__ unsigned char * skb_pull(struct sk_buff *skb, int len)
 
 extern __inline__ int skb_headroom(struct sk_buff *skb)
 {
-	return skb->data-skb->head;
+	return skb->data - skb->head;
 }
 
 extern __inline__ int skb_tailroom(struct sk_buff *skb)
 {
-	return skb->end-skb->tail;
+	return skb->end - skb->tail;
 }
 
 extern __inline__ void skb_reserve(struct sk_buff *skb, int len)
 {
-	skb->data+=len;
-	skb->tail+=len;
+	skb->data += len;
+	skb->tail += len;
 }
 
 extern __inline__ void skb_trim(struct sk_buff *skb, int len)
 {
-	if(skb->len>len)
-	{
-		skb->len=len;
-		skb->tail=skb->data+len;
+	if (skb->len > len) {
+		skb->len = len;
+		skb->tail = skb->data + len;
 	}
 }
 

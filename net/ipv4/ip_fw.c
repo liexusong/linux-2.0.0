@@ -201,7 +201,9 @@ extern inline int port_match(unsigned short *portptr,int nports,unsigned short p
  */
 
 
-int ip_fw_chk(struct iphdr *ip, struct device *rif, __u16 *redirport, struct ip_fw *chain, int policy, int mode)
+int ip_fw_chk(struct iphdr *ip, struct device *rif,
+			  __u16 *redirport, struct ip_fw *chain,
+			  int policy, int mode)
 {
 	struct ip_fw *f;
 	struct tcphdr		*tcp=(struct tcphdr *)((unsigned long *)ip+ip->ihl);
