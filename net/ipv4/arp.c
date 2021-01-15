@@ -233,22 +233,22 @@ int sysctl_arp_dead_res_time = ARP_DEAD_RES_TIME;
 struct arp_table
 {
     struct arp_table        *next;            /* Linked entry list         */
-    unsigned long            last_used;        /* For expiry             */
-    unsigned long            last_updated;        /* For expiry             */
+    unsigned long           last_used;        /* For expiry             */
+    unsigned long           last_updated;        /* For expiry             */
     unsigned int            flags;            /* Control status         */
-    u32                ip;            /* ip address of entry         */
-    u32                mask;            /* netmask - used for generalised proxy arps (tridge)         */
-    unsigned char            ha[MAX_ADDR_LEN];    /* Hardware address        */
-    struct device            *dev;            /* Device the entry is tied to     */
-    struct hh_cache            *hh;            /* Hardware headers chain    */
+    u32                     ip;            /* ip address of entry         */
+    u32                     mask;            /* netmask - used for generalised proxy arps (tridge)         */
+    unsigned char           ha[MAX_ADDR_LEN];    /* Hardware address        */
+    struct device           *dev;            /* Device the entry is tied to     */
+    struct hh_cache         *hh;            /* Hardware headers chain    */
 
     /*
      *    The following entries are only used for unresolved hw addresses.
      */
 
-    struct timer_list        timer;            /* expire timer         */
-    int                retries;        /* remaining retries         */
-    struct sk_buff_head        skb;            /* list of queued packets     */
+    struct timer_list       timer;            /* expire timer         */
+    int                     retries;        /* remaining retries         */
+    struct sk_buff_head     skb;            /* list of queued packets     */
 };
 
 

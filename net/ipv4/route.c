@@ -167,7 +167,7 @@ static __inline__ int rt_logmask(__u32 mask)
 {
     if (!(mask = ntohl(mask)))
         return 32;
-    return ffz(~mask);
+    return ffz(~mask); // Find First Zero in word
 }
 
 /*
@@ -332,9 +332,13 @@ static inline int bad_mask(__u32 mask, __u32 addr)
 }
 
 
-static int fib_del_list(struct fib_node **fp, __u32 dst,
-                        struct device *dev, __u32 gtw,
-                        short flags, short metric, __u32 mask)
+static int fib_del_list(struct fib_node **fp,
+                        __u32 dst,
+                        struct device *dev,
+                        __u32 gtw,
+                        short flags,
+                        short metric,
+                        __u32 mask)
 {
     struct fib_node *f;
     int found = 0;
@@ -450,10 +454,9 @@ fib_create_info(__u32 gw, struct device * dev,
             fi->fib_window != window ||
             fi->fib_irtt != irtt)
             continue;
+
         fi->fib_refcnt++;
-#if 0
-        printk("fib_create_info: fi %08x/%s is duplicate\n", fi->fib_gateway, fi->fib_dev->name);
-#endif
+
         return fi;
     }
 
@@ -474,11 +477,8 @@ fib_create_info(__u32 gw, struct device * dev,
 
     if (fib_info_list)
         fib_info_list->fib_prev = fi;
-    fib_info_list = fi;
 
-#if 0
-    printk("fib_create_info: fi %08x/%s is created\n", fi->fib_gateway, fi->fib_dev->name);
-#endif
+    fib_info_list = fi;
 
     return fi;
 }
@@ -521,7 +521,7 @@ fib_add_1(short flags, __u32 dst,
 
     f->fib_info = fi;
 
-    logmask = rt_logmask(mask);
+    logmask = rt_logmask(mask); // 返回 0 ~ 31
 
     fz = fib_zones[logmask];
     if (!fz) {
@@ -533,6 +533,7 @@ fib_add_1(short flags, __u32 dst,
         }
 
         memset(fz, 0, sizeof(struct fib_zone));
+
         fz->fz_logmask = logmask;
         fz->fz_mask = mask;
 
@@ -542,7 +543,7 @@ fib_add_1(short flags, __u32 dst,
 
         cli();
 
-        if (i<0) {
+        if (i < 0) {
             fz->fz_next = fib_zone_list;
             fib_zone_list = fz;
         } else {
@@ -559,13 +560,9 @@ fib_add_1(short flags, __u32 dst,
      * If zone overgrows RTZ_HASHING_LIMIT, create hash table.
      */
 
-    if (fz->fz_nent >= RTZ_HASHING_LIMIT
-        && !fz->fz_hash_table && logmask < 32)
-    {
-        struct fib_node ** ht;
-#if 0
-        printk("fib_add_1: hashing for zone %d started\n", logmask);
-#endif
+    if (fz->fz_nent >= RTZ_HASHING_LIMIT && !fz->fz_hash_table && logmask < 32) {
+        struct fib_node **ht;
+
         ht = kmalloc(RTZ_HASH_DIVISOR*sizeof(struct rtable*), GFP_KERNEL);
         if (ht) {
             memset(ht, 0, RTZ_HASH_DIVISOR*sizeof(struct fib_node*));
@@ -671,7 +668,7 @@ fib_add_1(short flags, __u32 dst,
     return;
 }
 
-static int rt_flush_list(struct fib_node ** fp, struct device *dev)
+static int rt_flush_list(struct fib_node **fp, struct device *dev)
 {
     int found = 0;
     struct fib_node *f;
@@ -682,10 +679,13 @@ static int rt_flush_list(struct fib_node ** fp, struct device *dev)
  *    discard it too.
  */
         if (f->fib_info->fib_dev != dev &&
-            (f->fib_info->fib_dev != &loopback_dev || f->fib_dst != dev->pa_addr)) {
+            (f->fib_info->fib_dev != &loopback_dev
+                || f->fib_dst != dev->pa_addr))
+        {
             fp = &f->fib_next;
             continue;
         }
+
         cli();
         *fp = f->fib_next;
         if (fib_loopback == f)
@@ -702,19 +702,15 @@ static __inline__ void fib_flush_1(struct device *dev)
     struct fib_zone *fz;
     int found = 0;
 
-    for (fz = fib_zone_list; fz; fz = fz->fz_next)
-    {
-        if (fz->fz_hash_table)
-        {
+    for (fz = fib_zone_list; fz; fz = fz->fz_next) {
+        if (fz->fz_hash_table) {
             int i;
             int tmp = 0;
-            for (i=0; i<RTZ_HASH_DIVISOR; i++)
+            for (i = 0; i < RTZ_HASH_DIVISOR; i++)
                 tmp += rt_flush_list(&fz->fz_hash_table[i], dev);
             fz->fz_nent -= tmp;
             found += tmp;
-        }
-        else
-        {
+        } else {
             int tmp;
             tmp = rt_flush_list(&fz->fz_list, dev);
             fz->fz_nent -= tmp;
@@ -772,15 +768,15 @@ int rt_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 
     ip_rt_fast_lock();
 
-    for (fz=fib_zone_list; fz; fz = fz->fz_next) {
+    for (fz = fib_zone_list; fz; fz = fz->fz_next) {
         int maxslot;
         struct fib_node ** fp;
 
         if (fz->fz_nent == 0)
             continue;
 
-        if (pos + 128*fz->fz_nent <= offset) {
-            pos += 128*fz->fz_nent;
+        if (pos + 128 * fz->fz_nent <= offset) {
+            pos += 128 * fz->fz_nent;
             len = 0;
             continue;
         }
@@ -843,8 +839,8 @@ done:
 
 int rt_cache_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 {
-    int len=0;
-    off_t pos=0;
+    int len = 0;
+    off_t pos = 0;
     char temp[129];
     struct rtable *r;
     int i;
@@ -872,11 +868,12 @@ int rt_cache_get_info(char *buffer, char **start, off_t offset, int length, int 
     }
 
 
-    while  (ip_rt_lock)
+    while (ip_rt_lock)
         sleep_on(&rt_wait);
+
     ip_rt_fast_lock();
 
-    for (i = 0; i<RT_HASH_DIVISOR; i++) {
+    for (i = 0; i < RT_HASH_DIVISOR; i++) {
         for (r = ip_rt_hash_table[i]; r; r = r->rt_next) {
             /*
              *    Spin through entries until we are ready
@@ -923,15 +920,15 @@ done:
 }
 
 
-static void rt_free(struct rtable * rt)
+static void rt_free(struct rtable *rt)
 {
     unsigned long flags;
 
     save_flags(flags);
     cli();
-    if (!rt->rt_refcnt)
-    {
-        struct hh_cache * hh = rt->rt_hh;
+
+    if (!rt->rt_refcnt) {
+        struct hh_cache *hh = rt->rt_hh;
         rt->rt_hh = NULL;
         restore_flags(flags);
         if (hh && atomic_dec_and_test(&hh->hh_refcnt))
@@ -939,13 +936,12 @@ static void rt_free(struct rtable * rt)
         kfree_s(rt, sizeof(struct rt_table));
         return;
     }
+
     rt->rt_next = rt_free_queue;
     rt->rt_flags &= ~RTF_UP;
     rt_free_queue = rt;
     ip_rt_bh_mask |= RT_BH_FREE;
-#if 0
-    printk("rt_free: %08x\n", rt->rt_dst);
-#endif
+
     restore_flags(flags);
 }
 
@@ -962,21 +958,19 @@ static __inline__ void rt_kick_free_queue(void)
     while ((rt = *rtp) != NULL) {
         if  (!rt->rt_refcnt) {
             struct hh_cache * hh = rt->rt_hh;
-#if 0
-            __u32 daddr = rt->rt_dst;
-#endif
+
             *rtp = rt->rt_next;
             rt->rt_hh = NULL;
+
             sti();
 
             if (hh && atomic_dec_and_test(&hh->hh_refcnt))
                 kfree_s(hh, sizeof(struct hh_cache));
 
             kfree_s(rt, sizeof(struct rt_table));
-#if 0
-            printk("rt_kick_free_queue: %08x is free\n", daddr);
-#endif
+
             cli();
+
             continue;
         }
         rtp = &rt->rt_next;
@@ -986,8 +980,10 @@ static __inline__ void rt_kick_free_queue(void)
 void ip_rt_run_bh()
 {
     unsigned long flags;
+
     save_flags(flags);
     cli();
+
     if (ip_rt_bh_mask && !ip_rt_lock) {
         if (ip_rt_bh_mask & RT_BH_REDIRECT)
             rt_kick_backlog();
@@ -1004,6 +1000,7 @@ void ip_rt_run_bh()
         if (ip_rt_bh_mask & RT_BH_FREE)
             rt_kick_free_queue();
     }
+
     restore_flags(flags);
 }
 
@@ -1018,6 +1015,7 @@ void ip_rt_check_expire()
         unsigned long now = jiffies;
 
         save_flags(flags);
+
         for (i = 0; i < RT_HASH_DIVISOR; i++) {
             rthp = &ip_rt_hash_table[i];
 
@@ -1062,6 +1060,7 @@ void ip_rt_check_expire()
                 rthp = &rth->rt_next;
             }
         }
+
         restore_flags(flags);
         rt_kick_free_queue();
     }
@@ -1079,7 +1078,7 @@ static void rt_redirect_1(__u32 dst, __u32 gw, struct device *dev)
     if (dev != get_gw_dev(gw))
         return;
 
-    rt = (struct rtable *) kmalloc(sizeof(struct rtable), GFP_ATOMIC);
+    rt = (struct rtable *)kmalloc(sizeof(struct rtable), GFP_ATOMIC);
     if (rt == NULL)
         return;
 
@@ -1094,8 +1093,8 @@ static void rt_redirect_1(__u32 dst, __u32 gw, struct device *dev)
     if (dev->mtu > 576)
         rt->rt_mtu = 576;
 #endif
-    rt->rt_lastuse  = jiffies;
-    rt->rt_refcnt  = 1;
+    rt->rt_lastuse = jiffies;
+    rt->rt_refcnt = 1;
     rt_cache_add(hash, rt);
     ip_rt_put(rt);
     return;
@@ -1125,18 +1124,7 @@ static void rt_cache_flush(void)
             rth->rt_next = NULL;
             rt_free(rth);
         }
-#if 0
-        if (nr > 0)
-            printk("rt_cache_flush: %d@%02x\n", nr, i);
-#endif
     }
-#if 0
-    if (rt_cache_size)
-    {
-        printk("rt_cache_flush: bug rt_cache_size=%d\n", rt_cache_size);
-        rt_cache_size = 0;
-    }
-#endif
 }
 
 static void rt_garbage_collect_1(void)
@@ -1175,13 +1163,15 @@ static void rt_garbage_collect_1(void)
     }
 }
 
-static __inline__ void rt_req_enqueue(struct rt_req **q, struct rt_req *rtr)
+static __inline__ void
+rt_req_enqueue(struct rt_req **q, struct rt_req *rtr)
 {
     unsigned long flags;
-    struct rt_req * tail;
+    struct rt_req *tail;
 
     save_flags(flags);
     cli();
+
     tail = *q;
     if (!tail)
         rtr->rtr_next = rtr;
@@ -1190,7 +1180,9 @@ static __inline__ void rt_req_enqueue(struct rt_req **q, struct rt_req *rtr)
         tail->rtr_next = rtr;
     }
     *q = rtr;
+
     restore_flags(flags);
+
     return;
 }
 
@@ -1198,7 +1190,8 @@ static __inline__ void rt_req_enqueue(struct rt_req **q, struct rt_req *rtr)
  * Caller should mask interrupts.
  */
 
-static __inline__ struct rt_req * rt_req_dequeue(struct rt_req **q)
+static __inline__ struct rt_req *
+rt_req_dequeue(struct rt_req **q)
 {
     struct rt_req * rtr;
 
@@ -1222,7 +1215,7 @@ static __inline__ struct rt_req * rt_req_dequeue(struct rt_req **q)
 static void rt_kick_backlog()
 {
     if (!ip_rt_lock) {
-        struct rt_req * rtr;
+        struct rt_req *rtr;
 
         ip_rt_fast_lock();
 
@@ -1264,13 +1257,13 @@ static int rt_del(__u32 dst,
     return retval;
 }
 
-static void rt_add(short flags,
-                   __u32 dst,
-                   __u32 mask,
-                   __u32 gw,
-                   struct device *dev,
-                   unsigned short mss,
-                   unsigned long window,
+static void rt_add(short flags,           // 标志位
+                   __u32 dst,             // 目标地址
+                   __u32 mask,            // 子掩码
+                   __u32 gw,              // 网关地址
+                   struct device *dev,    // 输出设备
+                   unsigned short mss,    //
+                   unsigned long window,  // 窗口大小
                    unsigned short irtt,
                    short metric)
 {
@@ -1302,8 +1295,8 @@ void ip_rt_flush(struct device *dev)
 
 void ip_rt_redirect(__u32 src, __u32 dst, __u32 gw, struct device *dev)
 {
-    struct rt_req * rtr;
-    struct rtable * rt;
+    struct rt_req *rtr;
+    struct rtable *rt;
 
     rt = ip_rt_route(dst, 0);
     if (!rt)
@@ -1350,25 +1343,17 @@ static __inline__ void rt_garbage_collect(void)
     ip_rt_bh_mask |= RT_BH_GARBAGE_COLLECT;
 }
 
-static void rt_cache_add(unsigned hash, struct rtable * rth)
+static void rt_cache_add(unsigned hash, struct rtable *rth)
 {
-    unsigned long    flags;
-    struct rtable    **rthp;
-    __u32        daddr = rth->rt_dst;
-    unsigned long    now = jiffies;
-
-#if 0
-    if (ip_rt_lock != 1)
-    {
-        printk("rt_cache_add: ip_rt_lock==%d\n", ip_rt_lock);
-        return;
-    }
-#endif
+    unsigned long flags;
+    struct rtable **rthp;
+    __u32 daddr = rth->rt_dst;
+    unsigned long now = jiffies;
 
     save_flags(flags);
 
     if (rth->rt_dev->header_cache_bind) {
-        struct rtable * rtg = rth;
+        struct rtable *rtg = rth;
 
         if (rth->rt_gateway != daddr) {
             ip_rt_fast_unlock();
@@ -1378,7 +1363,8 @@ static void rt_cache_add(unsigned hash, struct rtable * rth)
 
         if (rtg) {
             if (rtg == rth)
-                rtg->rt_dev->header_cache_bind(&rtg->rt_hh, rtg->rt_dev, ETH_P_IP, rtg->rt_dst);
+                rtg->rt_dev->header_cache_bind(&rtg->rt_hh, rtg->rt_dev,
+                                               ETH_P_IP, rtg->rt_dst);
             else {
                 if (rtg->rt_hh)
                     atomic_inc(&rtg->rt_hh->hh_refcnt);
@@ -1393,16 +1379,6 @@ static void rt_cache_add(unsigned hash, struct rtable * rth)
 
     cli();
     rth->rt_next = ip_rt_hash_table[hash];
-#if 0
-    if (rth->rt_next)
-    {
-        struct rtable * trth;
-        printk("rt_cache @%02x: %08x", hash, daddr);
-        for (trth=rth->rt_next; trth; trth=trth->rt_next)
-            printk(" . %08x", trth->rt_dst);
-        printk("\n");
-    }
-#endif
     ip_rt_hash_table[hash] = rth;
     rthp = &rth->rt_next;
     sti();
@@ -1422,9 +1398,6 @@ static void rt_cache_add(unsigned hash, struct rtable * rth)
             *rthp = rth->rt_next;
             rt_cache_size--;
             sti();
-#if 0
-            printk("rt_cache clean %02x@%08x\n", hash, rth->rt_dst);
-#endif
             rt_free(rth);
             continue;
         }
@@ -1453,10 +1426,6 @@ struct rtable *ip_rt_slow_route(__u32 daddr, int local)
     struct fib_info *fi;
     __u32 saddr;
 
-#if 0
-    printk("rt_cache miss @%08x\n", daddr);
-#endif
-
     rth = kmalloc(sizeof(struct rtable), GFP_ATOMIC);
     if (!rth) {
         ip_rt_unlock();
@@ -1477,16 +1446,14 @@ struct rtable *ip_rt_slow_route(__u32 daddr, int local)
 #ifdef CONFIG_KERNELD
         char wanted_route[20];
 #endif
-#if 0
-        printk("rt_route failed @%08x\n", daddr);
-#endif
+
         ip_rt_unlock();
         kfree_s(rth, sizeof(struct rtable));
 #ifdef CONFIG_KERNELD
-        daddr=ntohl(daddr);
+        daddr = ntohl(daddr);
         sprintf(wanted_route, "%d.%d.%d.%d",
-            (int)(daddr >> 24) & 0xff, (int)(daddr >> 16) & 0xff,
-            (int)(daddr >> 8) & 0xff, (int)daddr & 0xff);
+                (int)(daddr >> 24) & 0xff, (int)(daddr >> 16) & 0xff,
+                (int)(daddr >> 8) & 0xff, (int)daddr & 0xff);
         kerneld_route(wanted_route);     /* Dynamic route request */
 #endif
         return NULL;
@@ -1494,7 +1461,7 @@ struct rtable *ip_rt_slow_route(__u32 daddr, int local)
 
     saddr = fi->fib_dev->pa_addr;
 
-    if (daddr == fi->fib_dev->pa_addr) {
+    if (daddr == fi->fib_dev->pa_addr) { // 如果是本地的地址, 那么使用回环路由
         f->fib_use--;
         if ((f = fib_loopback) != NULL) {
             f->fib_use++;
@@ -1538,9 +1505,6 @@ struct rtable *ip_rt_slow_route(__u32 daddr, int local)
         rt_cache_add(hash, rth);
     else {
         rt_free(rth);
-#if 0
-        printk(KERN_DEBUG "rt_cache: route to %08x was born dead\n", daddr);
-#endif
     }
 
     ip_rt_unlock();
@@ -1616,9 +1580,9 @@ int ip_rt_new(struct rtentry *r)
      */
 
     flags  = r->rt_flags;
-    daddr  = (__u32) ((struct sockaddr_in *) &r->rt_dst)->sin_addr.s_addr;
-    mask   = (__u32) ((struct sockaddr_in *) &r->rt_genmask)->sin_addr.s_addr;
-    gw     = (__u32) ((struct sockaddr_in *) &r->rt_gateway)->sin_addr.s_addr;
+    daddr  = (__u32)((struct sockaddr_in *) &r->rt_dst)->sin_addr.s_addr;
+    mask   = (__u32)((struct sockaddr_in *) &r->rt_genmask)->sin_addr.s_addr;
+    gw     = (__u32)((struct sockaddr_in *) &r->rt_gateway)->sin_addr.s_addr;
     metric = r->rt_metric > 0 ? r->rt_metric - 1 : 0;
 
     /*
@@ -1627,10 +1591,10 @@ int ip_rt_new(struct rtentry *r)
      *    but people keep using it...  (and gated likes it ;))
      */
 
-    if (!dev && (flags & RTF_GATEWAY)) {
+    if (!dev && (flags & RTF_GATEWAY)) { // 如果是一个网关
         struct device *dev2;
         for (dev2 = dev_base ; dev2 != NULL ; dev2 = dev2->next) {
-            if ((dev2->flags & IFF_UP) && dev2->pa_addr == gw) {
+            if ((dev2->flags & IFF_UP) && dev2->pa_addr == gw) { // 如果网关地址与本地的设备地址对应, 转换成本地路由
                 flags &= ~RTF_GATEWAY;
                 dev = dev2;
                 break;
@@ -1638,7 +1602,7 @@ int ip_rt_new(struct rtentry *r)
         }
     }
 
-    if (flags & RTF_HOST)
+    if (flags & RTF_HOST) // 如果是主机路由, 子掩码要使用全部位
         mask = 0xffffffff;
     else if (mask && r->rt_genmask.sa_family != AF_INET)
         return -EAFNOSUPPORT;
@@ -1652,7 +1616,7 @@ int ip_rt_new(struct rtentry *r)
          *    Tunnel devices are exempt from this rule.
          */
         if (!dev)
-            dev = get_gw_dev(gw);
+            dev = get_gw_dev(gw); // 获取网关转发的设备
         else if (dev != get_gw_dev(gw) && dev->type != ARPHRD_TUNNEL)
             return -EINVAL;
         if (!dev)

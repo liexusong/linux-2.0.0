@@ -1,5 +1,5 @@
 /*
- *	Linux NET3:	IP/IP protocol decoder. 
+ *	Linux NET3:	IP/IP protocol decoder.
  *
  *	Authors:
  *		Sam Lantinga (slouken@cs.ucdavis.edu)  02/01/95
@@ -18,7 +18,7 @@
  *	2 of the License, or (at your option) any later version.
  *
  */
- 
+
 #include <linux/module.h>
 
 #include <linux/types.h>
@@ -47,9 +47,9 @@
  *		skb->h.raw points at the new header.
  */
 
-int ipip_rcv(struct sk_buff *skb, struct device *dev, struct options *opt, 
-		__u32 daddr, unsigned short len, __u32 saddr,
-                                   int redo, struct inet_protocol *protocol)
+int ipip_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
+            __u32 daddr, unsigned short len, __u32 saddr,
+            int redo, struct inet_protocol *protocol)
 {
 	/* Don't unlink in the middle of a turnaround */
 	MOD_INC_USE_COUNT;
@@ -59,13 +59,13 @@ int ipip_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 	/*
 	 *	Discard the original IP header
 	 */
-	 
+
 	skb_pull(skb, ((struct iphdr *)skb->data)->ihl<<2);
-	
+
 	/*
 	 *	Adjust pointers
 	 */
-	 
+
 	skb->h.iph=(struct iphdr *)skb->data;
 	skb->ip_hdr=(struct iphdr *)skb->data;
 	memset(skb->proto_priv, 0, sizeof(struct options));
@@ -74,7 +74,7 @@ int ipip_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 	 *	If you want to add LZ compressed IP or things like that here,
 	 *	and in drivers/net/tunnel.c are the places to add.
 	 */
-	
+
 	skb->protocol = htons(ETH_P_IP);
 	skb->ip_summed = 0;
 	netif_rx(skb);
@@ -102,13 +102,13 @@ static struct inet_protocol ipip_protocol = {
  *	And now the modules code and kernel interface.
  */
 
-int init_module( void) 
+int init_module( void)
 {
 	inet_add_protocol(&ipip_protocol);
 	return 0;
 }
 
-void cleanup_module( void) 
+void cleanup_module( void)
 {
 	if ( inet_del_protocol(&ipip_protocol) < 0 )
 		printk(KERN_INFO "ipip close: can't remove protocol\n");
