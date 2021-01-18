@@ -1123,7 +1123,7 @@ static void arp_send_q(struct arp_table *entry)
     save_flags(flags);
     cli();
 
-    while((skb = skb_dequeue(&entry->skb)) != NULL) {
+    while ((skb = skb_dequeue(&entry->skb)) != NULL) {
         IS_SKB(skb);
 
         skb_device_lock(skb);

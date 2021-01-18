@@ -87,8 +87,8 @@ void eth_setup(char *str, int *ints)
  *	daddr=NULL	means leave destination address (eg unresolved arp)
  */
 
-int eth_header(struct sk_buff *skb, struct device *dev, unsigned short type,
-			   void *daddr, void *saddr, unsigned len)
+int eth_header(struct sk_buff *skb, struct device *dev,
+			   unsigned short type, void *daddr, void *saddr, unsigned len)
 {
 	struct ethhdr *eth = (struct ethhdr *)skb_push(skb, ETH_HLEN);
 

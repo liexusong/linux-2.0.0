@@ -158,18 +158,21 @@ extern __inline__ struct rtable * ip_rt_route(__u32 daddr, int local)
 #endif
 #endif
 
-extern __inline__ struct rtable * ip_check_route(struct rtable ** rp,
-						       __u32 daddr, int local)
+extern __inline__ struct rtable * ip_check_route(struct rtable **rp,
+												 __u32 daddr, int local)
 {
-	struct rtable * rt = *rp;
+	struct rtable *rt = *rp;
 
-	if (!rt || rt->rt_dst != daddr || !(rt->rt_flags&RTF_UP)
-	    || ((local==1)^((rt->rt_flags&RTF_LOCAL) != 0)))
+	if (!rt
+		|| rt->rt_dst != daddr
+		|| !(rt->rt_flags & RTF_UP)
+	    || ((local == 1) ^ ((rt->rt_flags & RTF_LOCAL) != 0)))
 	{
 		ip_rt_put(rt);
 		rt = ip_rt_route(daddr, local);
 		*rp = rt;
 	}
+
 	return rt;
 }
 

@@ -361,11 +361,10 @@ void tcp_write_xmit(struct sock *sk)
  * on the write queue.
  */
             iph = skb->ip_hdr;
-            th = (struct tcphdr *)(((char *)iph) +(iph->ihl << 2));
-            size = skb->len - (((unsigned char *) th) - skb->data);
+            th = (struct tcphdr *)(((char *)iph) + (iph->ihl << 2));
+            size = skb->len - (((unsigned char *)th) - skb->data);
 #ifndef CONFIG_NO_PATH_MTU_DISCOVERY
-            if (size > sk->mtu - sizeof(struct iphdr))
-            {
+            if (size > sk->mtu - sizeof(struct iphdr)) {
                 iph->frag_off &= ~htons(IP_DF);
                 ip_send_check(iph);
             }
@@ -696,7 +695,7 @@ void tcp_send_fin(struct sock *sk)
     struct device *dev = NULL;
     int tmp;
 
-    buff = sock_wmalloc(sk, MAX_RESET_SIZE,1 , GFP_KERNEL);
+    buff = sock_wmalloc(sk, MAX_RESET_SIZE, 1, GFP_KERNEL);
     if (buff == NULL) {
         /* This is a disaster if it occurs */
         printk(KERN_CRIT "tcp_send_fin: Impossible malloc failure");
@@ -715,7 +714,7 @@ void tcp_send_fin(struct sock *sk)
      *    Put in the IP header and routing stuff.
      */
 
-    tmp = prot->build_header(buff,sk->saddr, sk->daddr, &dev,
+    tmp = prot->build_header(buff, sk->saddr, sk->daddr, &dev,
                              IPPROTO_TCP, sk->opt, sizeof(struct tcphdr),
                              sk->ip_tos, sk->ip_ttl, &sk->ip_route_cache);
     if (tmp < 0) {
@@ -743,7 +742,7 @@ void tcp_send_fin(struct sock *sk)
      *    if so simply add the fin to that buffer, not send it ahead.
      */
 
-    t1 = (struct tcphdr *)skb_put(buff,sizeof(struct tcphdr));
+    t1 = (struct tcphdr *)skb_put(buff, sizeof(struct tcphdr));
     buff->dev = dev;
     memcpy(t1, th, sizeof(*t1));
     buff->seq = sk->write_seq;
@@ -767,15 +766,12 @@ void tcp_send_fin(struct sock *sk)
             skb_unlink(buff);
         }
         skb_queue_tail(&sk->write_queue, buff);
-    }
-    else
-    {
+    } else {
         sk->sent_seq = sk->write_seq;
         sk->prot->queue_xmit(sk, dev, buff, 0);
         tcp_reset_xmit_timer(sk, TIME_WRITE, sk->rto);
     }
 }
-
 
 void tcp_send_synack(struct sock * newsk, struct sock * sk, struct sk_buff * skb)
 {

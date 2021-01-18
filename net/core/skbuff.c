@@ -550,11 +550,11 @@ int skb_tailroom(struct sk_buff *skb)
 void skb_reserve(struct sk_buff *skb, int len)
 {
 	IS_SKB(skb);
-	skb->data+=len;
-	skb->tail+=len;
-	if(skb->tail>skb->end)
+	skb->data += len;
+	skb->tail += len;
+	if (skb->tail > skb->end)
 		panic("sk_res: over");
-	if(skb->data<skb->head)
+	if (skb->data < skb->head)
 		panic("sk_res: under");
 	IS_SKB(skb);
 }
