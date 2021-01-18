@@ -499,13 +499,18 @@ void __skb_unlink(struct sk_buff *skb)
 
 unsigned char *skb_put(struct sk_buff *skb, int len)
 {
-	unsigned char *tmp=skb->tail;
+	unsigned char *tmp = skb->tail;
+
 	IS_SKB(skb);
-	skb->tail+=len;
-	skb->len+=len;
+
+	skb->tail += len;
+	skb->len += len;
+
 	IS_SKB(skb);
-	if(skb->tail>skb->end)
+
+	if (skb->tail > skb->end)
 		panic("skput:over: %p:%d", __builtin_return_address(0),len);
+
 	return tmp;
 }
 

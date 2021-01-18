@@ -49,15 +49,15 @@ struct sk_buff
 {
 	struct sk_buff *next;			/* Next buffer in list 				*/
 	struct sk_buff *prev;			/* Previous buffer in list 			*/
-	struct sk_buff_head *list;			/* List we are on				*/
+	struct sk_buff_head *list;		/* List we are on					*/
 #if CONFIG_SKB_CHECK
 	int magic_debug_cookie;
 #endif
-	struct sk_buff *link3;			/* Link for IP protocol level buffer chains 	*/
-	struct sock *sk;			/* Socket we are owned by 			*/
-	unsigned long when;			/* used to compute rtt's			*/
-	struct timeval stamp;			/* Time we arrived				*/
-	struct device *dev;			/* Device we arrived on/are leaving by		*/
+	struct sk_buff *link3;			/* Link for IP protocol level buffer chains*/
+	struct sock *sk;				/* Socket we are owned by 			*/
+	unsigned long when;				/* used to compute rtt's			*/
+	struct timeval stamp;			/* Time we arrived					*/
+	struct device *dev;				/* Device we arrived on/are leaving by*/
 	union
 	{
 		struct tcphdr	*th;     // TCP header
@@ -79,22 +79,22 @@ struct sk_buff
 	struct iphdr	*ip_hdr;		/* For IPPROTO_RAW 					*/
 	unsigned long 	len;			/* Length of actual data			*/
 	unsigned long	csum;			/* Checksum 						*/
-	__u32			saddr;			/* IP source address				*/
-	__u32			daddr;			/* IP target address				*/
-	__u32			raddr;			/* IP next hop address				*/
+	__u32			saddr;			/* IP source address				*/ // 源IP地址
+	__u32			daddr;			/* IP target address				*/ // 目标IP地址
+	__u32			raddr;			/* IP next hop address				*/ // 吓一跳IP地址
 	__u32			seq;			/* TCP sequence number				*/
 	__u32			end_seq;		/* seq [+ fin] [+ syn] + datalen	*/
 	__u32			ack_seq;		/* TCP ack sequence number			*/
-	unsigned char	proto_priv[16];	        /* Protocol private data	*/
+	unsigned char	proto_priv[16];	/* Protocol private data	*/
 	volatile char 	acked,			/* Are we acked ?					*/
-			used,			/* Are we in use ?							*/
-			free,			/* How to free this buffer					*/
-			arp;			/* Has IP/ARP resolution finished			*/
+					used,			/* Are we in use ?					*/
+					free,			/* How to free this buffer			*/
+					arp;			/* Has IP/ARP resolution finished	*/ // 是否已经解析到mac地址
 	unsigned char	tries,			/* Times tried						*/
 					lock,			/* Are we locked ?					*/
-					localroute,		/* Local routing asserted for this frame	*/
+					localroute,		/* Local routing asserted for this frame*/
 					pkt_type,		/* Packet class						*/
-					pkt_bridged,		/* Tracker for bridging 		*/
+					pkt_bridged,	/* Tracker for bridging 			*/
 					ip_summed;		/* Driver fed us an IP checksum		*/
 #define PACKET_HOST			0		/* To us							*/
 #define PACKET_BROADCAST	1		/* To all							*/
@@ -110,8 +110,8 @@ struct sk_buff
 	unsigned char	*data;			/* Data head pointer				*/
 	unsigned char	*tail;			/* Tail pointer						*/
 	unsigned char 	*end;			/* End pointer						*/
-	void 		(*destructor)(struct sk_buff *);	/* Destruct function*/
-	__u16		redirport;		/* Redirect port						*/
+	void 			(*destructor)(struct sk_buff *);/* Destruct function*/
+	__u16			redirport;		/* Redirect port					*/
 };
 
 #ifdef CONFIG_SKB_LARGE

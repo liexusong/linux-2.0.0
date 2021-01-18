@@ -1037,25 +1037,22 @@ static struct arp_table * arp_alloc_entry(void)
     if (arp_size >= ARP_MAXSIZE)
         arp_force_expire();
 
-    entry = (struct arp_table *)
-        kmalloc(sizeof(struct arp_table),GFP_ATOMIC);
-
-    if (entry != NULL)
-    {
+    entry = (struct arp_table *)kmalloc(sizeof(struct arp_table), GFP_ATOMIC);
+    if (entry != NULL) {
         atomic_inc(&arp_size);
+
         memset(entry, 0, sizeof(struct arp_table));
 
-                entry->mask = DEF_ARP_NETMASK;
+        entry->mask = DEF_ARP_NETMASK;
         init_timer(&entry->timer);
         entry->timer.function = arp_expire_request;
         entry->timer.data = (unsigned long)entry;
         entry->last_updated = entry->last_used = jiffies;
         skb_queue_head_init(&entry->skb);
     }
+
     return entry;
 }
-
-
 
 /*
  *    Purge a device from the ARP queue
@@ -1080,15 +1077,12 @@ int arp_device_event(struct notifier_block *this, unsigned long event, void *ptr
         printk("arp_device_event: impossible\n");
 #endif
 
-    for (i = 0; i < FULL_ARP_TABLE_SIZE; i++)
-    {
+    for (i = 0; i < FULL_ARP_TABLE_SIZE; i++) {
         struct arp_table *entry;
         struct arp_table **pentry = &arp_tables[i];
 
-        while ((entry = *pentry) != NULL)
-        {
-            if (entry->dev == dev)
-            {
+        while ((entry = *pentry) != NULL) {
+            if (entry->dev == dev) {
                 *pentry = entry->next;    /* remove from list */
                 arp_free_entry(entry);
             }
@@ -1116,8 +1110,7 @@ static void arp_send_q(struct arp_table *entry)
      *    Empty the entire queue, building its data up ready to send
      */
 
-    if(!(entry->flags&ATF_COM))
-    {
+    if (!(entry->flags&ATF_COM)) {
         printk(KERN_ERR "arp_send_q: incomplete entry for %s\n",
                 in_ntoa(entry->ip));
         /* Can't flush the skb, because RFC1122 says to hang on to */
@@ -1128,15 +1121,16 @@ static void arp_send_q(struct arp_table *entry)
     }
 
     save_flags(flags);
-
     cli();
-    while((skb = skb_dequeue(&entry->skb)) != NULL)
-    {
+
+    while((skb = skb_dequeue(&entry->skb)) != NULL) {
         IS_SKB(skb);
+
         skb_device_lock(skb);
+
         restore_flags(flags);
-        if(!skb->dev->rebuild_header(skb->data,skb->dev,skb->raddr,skb))
-        {
+
+        if (!skb->dev->rebuild_header(skb->data,skb->dev,skb->raddr,skb)) {
             skb->arp  = 1;
             if(skb->sk==NULL)
                 dev_queue_xmit(skb, skb->dev, 0);
@@ -1285,37 +1279,37 @@ int arp_query(unsigned char *haddr, u32 paddr, struct device * dev)
 
 static int arp_set_predefined(int addr_hint, unsigned char * haddr, u32 paddr, struct device * dev)
 {
-    switch (addr_hint)
-    {
-        case IS_MYADDR:
-            printk(KERN_DEBUG "ARP: arp called for own IP address\n");
-            memcpy(haddr, dev->dev_addr, dev->addr_len);
-            return 1;
+    switch (addr_hint) {
+    case IS_MYADDR:
+        printk(KERN_DEBUG "ARP: arp called for own IP address\n");
+        memcpy(haddr, dev->dev_addr, dev->addr_len);
+        return 1;
+
 #ifdef CONFIG_IP_MULTICAST
-        case IS_MULTICAST:
-            if(dev->type==ARPHRD_ETHER || dev->type==ARPHRD_IEEE802)
-            {
-                u32 taddr;
-                haddr[0]=0x01;
-                haddr[1]=0x00;
-                haddr[2]=0x5e;
-                taddr=ntohl(paddr);
-                haddr[5]=taddr&0xff;
-                taddr=taddr>>8;
-                haddr[4]=taddr&0xff;
-                taddr=taddr>>8;
-                haddr[3]=taddr&0x7f;
-                return 1;
-            }
-        /*
-         *    If a device does not support multicast broadcast the stuff (eg AX.25 for now)
-         */
+    case IS_MULTICAST:
+        if (dev->type == ARPHRD_ETHER || dev->type == ARPHRD_IEEE802) {
+            u32 taddr;
+            haddr[0] = 0x01;
+            haddr[1] = 0x00;
+            haddr[2] = 0x5e;
+            taddr = ntohl(paddr);
+            haddr[5] = taddr&0xff;
+            taddr = taddr>>8;
+            haddr[4] = taddr&0xff;
+            taddr = taddr>>8;
+            haddr[3] = taddr&0x7f;
+            return 1;
+        }
+    /*
+     *    If a device does not support multicast broadcast the stuff (eg AX.25 for now)
+     */
 #endif
 
-        case IS_BROADCAST:
-            memcpy(haddr, dev->broadcast, dev->addr_len);
+    case IS_BROADCAST:
+        memcpy(haddr, dev->broadcast, dev->addr_len);
             return 1;
     }
+
     return 0;
 }
 
@@ -1323,54 +1317,53 @@ static int arp_set_predefined(int addr_hint, unsigned char * haddr, u32 paddr, s
  *    Create a new unresolved entry.
  */
 
-struct arp_table * arp_new_entry(u32 paddr, struct device *dev, struct hh_cache *hh, struct sk_buff *skb)
+struct arp_table *arp_new_entry(u32 paddr, struct device *dev, struct hh_cache *hh, struct sk_buff *skb)
 {
     struct arp_table *entry;
 
     entry = arp_alloc_entry();
-
-    if (entry != NULL)
-    {
+    if (entry != NULL) {
         entry->ip = paddr;
         entry->dev = dev;
-        if (hh)
-        {
+
+        if (hh) {
             entry->hh = hh;
             atomic_inc(&hh->hh_refcnt);
             hh->hh_arp = (void*)entry;
         }
+
         entry->timer.expires = jiffies + sysctl_arp_res_time;
 
-        if (skb != NULL)
-        {
+        if (skb != NULL) {
             skb_queue_tail(&entry->skb, skb);
             skb_device_unlock(skb);
         }
 
-        if (!ARP_LOCKED())
-        {
+        if (!ARP_LOCKED()) {
             unsigned long hash = HASH(paddr);
+
             entry->next = arp_tables[hash];
             arp_tables[hash] = entry;
+
             add_timer(&entry->timer);
+
             entry->retries = sysctl_arp_max_tries;
+
 #ifdef CONFIG_ARPD
             if (!arpd_not_running)
                 arpd_lookup(paddr, dev);
             else
 #endif
-                arp_send(ARPOP_REQUEST, ETH_P_ARP, paddr, dev, dev->pa_addr, NULL,
-                     dev->dev_addr, NULL);
+                arp_send(ARPOP_REQUEST, ETH_P_ARP, paddr, dev,
+                         dev->pa_addr, NULL, dev->dev_addr, NULL);
         }
         else
         {
-#if RT_CACHE_DEBUG >= 2
-            printk("arp_new_entry: %08x backlogged\n", entry->ip);
-#endif
             arp_enqueue(&arp_req_backlog, entry);
             arp_bh_mask |= ARP_BH_BACKLOG;
         }
     }
+
     return entry;
 }
 
@@ -1385,8 +1378,7 @@ int arp_find(unsigned char *haddr, u32 paddr, struct device *dev,
     struct arp_table *entry;
     unsigned long hash;
 
-    if (arp_set_predefined(ip_chk_addr(paddr), haddr, paddr, dev))
-    {
+    if (arp_set_predefined(ip_chk_addr(paddr), haddr, paddr, dev)) {
         if (skb)
             skb->arp = 1;
         return 0;
@@ -1400,10 +1392,8 @@ int arp_find(unsigned char *haddr, u32 paddr, struct device *dev,
      */
     entry = arp_lookup(paddr, dev);
 
-    if (entry != NULL)     /* It exists */
-    {
-        if (entry->flags & ATF_COM)
-        {
+    if (entry != NULL) {    /* It exists */
+        if (entry->flags & ATF_COM) {
             entry->last_used = jiffies;
             memcpy(haddr, entry->ha, dev->addr_len);
             if (skb)
@@ -1417,10 +1407,8 @@ int arp_find(unsigned char *haddr, u32 paddr, struct device *dev,
          *    queue the packet with the previous attempt
          */
 
-        if (skb != NULL)
-        {
-            if (entry->last_updated)
-            {
+        if (skb != NULL) {
+            if (entry->last_updated) {
                 skb_queue_tail(&entry->skb, skb);
                 skb_device_unlock(skb);
             }
@@ -1434,7 +1422,9 @@ int arp_find(unsigned char *haddr, u32 paddr, struct device *dev,
                 dev_kfree_skb(skb, FREE_WRITE);
             }
         }
+
         arp_unlock();
+
         return 1;
     }
 
@@ -1444,6 +1434,7 @@ int arp_find(unsigned char *haddr, u32 paddr, struct device *dev,
         dev_kfree_skb(skb, FREE_WRITE);
 
     arp_unlock();
+
     return 1;
 }
 

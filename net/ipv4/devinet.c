@@ -90,8 +90,7 @@ int ip_chk_addr(unsigned long addr)
 	 *	Also accept `loopback broadcast' as BROADCAST.
 	 */
 
-	if (addr == INADDR_ANY || addr == INADDR_BROADCAST ||
-	    addr == htonl(0x7FFFFFFFL))
+	if (addr == INADDR_ANY || addr == INADDR_BROADCAST || addr == htonl(0x7FFFFFFFL))
 		return IS_BROADCAST;
 
 #ifndef  CONFIG_IP_CLASSLESS
@@ -113,10 +112,10 @@ int ip_chk_addr(unsigned long addr)
 	 *	speed this by keeping a dev and a dev_up chain.
 	 */
 
-	for (dev = dev_base; dev != NULL; dev = dev->next)
-	{
+	for (dev = dev_base; dev != NULL; dev = dev->next) {
 		if ((!(dev->flags & IFF_UP)) || dev->family!=AF_INET)
 			continue;
+
 		/*
 		 *	If the protocol address of the device is 0 this is special
 		 *	and means we are address hunting (eg bootp).
@@ -124,24 +123,25 @@ int ip_chk_addr(unsigned long addr)
 
 		if (dev->pa_addr == 0)
 			return IS_MYADDR;
+
 		/*
 		 *	Is it the exact IP address?
 		 */
 
 		if (addr == dev->pa_addr)
 			return IS_MYADDR;
+
 		/*
 		 *	Is it our broadcast address?
 		 */
 
 		if ((dev->flags & IFF_BROADCAST) && addr == dev->pa_brdaddr)
 			return IS_BROADCAST;
+
 		/*
 		 *	Nope. Check for a subnetwork broadcast.
 		 */
-
-		if (((addr ^ dev->pa_addr) & dev->pa_mask) == 0)
-		{
+		if (((addr ^ dev->pa_addr) & dev->pa_mask) == 0) {
 			if ((addr & ~dev->pa_mask) == 0)
 				return IS_BROADCAST;
 			if ((addr & ~dev->pa_mask) == ~dev->pa_mask)
@@ -153,8 +153,7 @@ int ip_chk_addr(unsigned long addr)
 	 	 *	Nope. Check for Network broadcast.
 	 	 */
 
-		if (((addr ^ dev->pa_addr) & mask) == 0)
-		{
+		if (((addr ^ dev->pa_addr) & mask) == 0) {
 			if ((addr & ~mask) == 0)
 				return IS_BROADCAST;
 			if ((addr & ~mask) == ~mask)
@@ -162,8 +161,10 @@ int ip_chk_addr(unsigned long addr)
 		}
 #endif
 	}
-	if(IN_MULTICAST(ntohl(addr)))
+
+	if (IN_MULTICAST(ntohl(addr)))
 		return IS_MULTICAST;
+
 	return 0;		/* no match at all */
 }
 

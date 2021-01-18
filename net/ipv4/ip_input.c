@@ -295,7 +295,7 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
      *    Note this now means skb->len holds ntohs(iph->tot_len).
      */
 
-    skb_trim(skb, ntohs(iph->tot_len)); // 缩小尾部长度到len
+    skb_trim(skb, ntohs(iph->tot_len)); // 缩小尾部长度到len(去掉链路层的尾部)
 
     /*
      *    Try to select closest <src,dst> alias device, if any.
@@ -352,7 +352,7 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
          *    Reassemble IP fragments.
          */
 
-        if (is_frag) {
+        if (is_frag) { // 如果是分片
             /* Defragment. Obtain the complete packet if there is one */
             skb = ip_defrag(iph,skb,dev); // IP分片处理
             if (skb == NULL)
@@ -377,9 +377,9 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
      *    See if the firewall wants to dispose of the packet.
      */
 
-#ifdef CONFIG_FIREWALL
+#ifdef CONFIG_FIREWALL // 如果配置了防火墙
 
-    if ((fwres=call_in_firewall(PF_INET, skb->dev, iph, &rport)) < FW_ACCEPT) {
+    if ((fwres = call_in_firewall(PF_INET, skb->dev, iph, &rport)) < FW_ACCEPT) {
         if (fwres == FW_REJECT)
             icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PORT_UNREACH, 0, dev);
         kfree_skb(skb, FREE_WRITE);
@@ -423,6 +423,7 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
      *    function entry.
      */
     daddr = iph->daddr;
+
 #ifdef CONFIG_IP_TRANSPARENT_PROXY
     /*
      *    ip_chksock adds still more overhead for forwarded traffic...
@@ -432,11 +433,10 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
         || (brd = ip_chk_addr(iph->daddr)) != 0
         || ip_chksock(skb))
 #else
-    if (iph->daddr == skb->dev->pa_addr
-        || (brd = ip_chk_addr(iph->daddr)) != 0)
+    if (iph->daddr == skb->dev->pa_addr || (brd = ip_chk_addr(iph->daddr)) != 0)
 #endif
     {
-        if (opt && opt->srr) {
+        if (opt && opt->srr) { // 如果IP选项设置了源路由
             int srrspace, srrptr;
             __u32 nexthop;
             unsigned char *optptr = ((unsigned char *)iph) + opt->srr;
@@ -506,11 +506,13 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
                     kfree_skb(skb, FREE_WRITE);
                     return 0;
                 }
+
                 if (ip_mc->multiaddr == iph->daddr)
                     break;
+
                 ip_mc = ip_mc->next;
-            }
-            while(1);
+
+            } while(1);
         }
 #endif
 
@@ -521,7 +523,7 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 
         if (is_frag) {
             /* Defragment. Obtain the complete packet if there is one */
-            skb = ip_defrag(iph,skb,dev);
+            skb = ip_defrag(iph, skb, dev);
             if(skb == NULL)
                 return 0;
             skb->dev = dev;
@@ -535,7 +537,7 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
          * Do we need to de-masquerade this packet?
          */
         {
-            int ret = ip_fw_demasquerade(&skb,dev);
+            int ret = ip_fw_demasquerade(&skb, dev);
             if (ret < 0) {
                 kfree_skb(skb, FREE_WRITE);
                 return 0;
@@ -564,16 +566,16 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 
         if (brd == IS_MULTICAST
         	&& (iph->daddr & htonl(0xFFFFFF00)) != htonl(0xE0000000))
-            mroute_pkt=1;
+            mroute_pkt = 1;
 
 #endif
+
         /*
          *    Deliver to raw sockets. This is fun as to avoid copies we want to make no surplus copies.
          *
          *    RFC 1122: SHOULD pass TOS value up to the transport layer.
          */
-
-        hash = iph->protocol & (SOCK_ARRAY_SIZE-1);
+        hash = iph->protocol & (SOCK_ARRAY_SIZE - 1);
 
         /*
          *    If there maybe a raw socket we must check - if not we don't care less
@@ -583,23 +585,22 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
             struct sock *sknext = NULL;
             struct sk_buff *skb1;
 
-            raw_sk = get_sock_raw(raw_sk, iph->protocol,
-                                  iph->saddr, iph->daddr);
+            raw_sk = get_sock_raw(raw_sk, iph->protocol, iph->saddr, iph->daddr);
             if (raw_sk) {    /* Any raw sockets */
                 do {
                     /* Find the next */
-                    sknext = get_sock_raw(raw_sk->next, iph->protocol,
-                    	                  iph->saddr, iph->daddr);
+                    sknext = get_sock_raw(raw_sk->next, iph->protocol, iph->saddr, iph->daddr);
                     if (sknext)
                         skb1 = skb_clone(skb, GFP_ATOMIC);
                     else
                         break;    /* One pending raw socket left */
+
                     if (skb1)
                         raw_rcv(raw_sk, skb1, dev, iph->saddr,daddr);
-                    raw_sk = sknext;
-                }
-                while (raw_sk != NULL);
 
+                    raw_sk = sknext;
+
+                } while (raw_sk != NULL);
                 /*
                  *    Here either raw_sk is the last raw socket, or NULL if none
                  */
@@ -622,8 +623,9 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
         {
             struct sk_buff *skb2;
 
-            if (ipprot->protocol != iph->protocol)
+            if (ipprot->protocol != iph->protocol) // 下一个协议
                 continue;
+
                /*
             *     See if we need to make a copy of it.  This will
             *     only be set if more than one protocol wants it.
@@ -688,8 +690,7 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 
         if (raw_sk != NULL)    /* Shift to last raw user */
             raw_rcv(raw_sk, skb, dev, iph->saddr, daddr);
-        else if (!flag)        /* Free and report errors */
-        {
+        else if (!flag) {      /* Free and report errors */
             if (brd != IS_BROADCAST && brd != IS_MULTICAST)
                 icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PROT_UNREACH, 0, dev);
             kfree_skb(skb, FREE_WRITE);
@@ -714,8 +715,8 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
     /*
      *    The packet is for another target. Forward the frame
      */
-
 #ifdef CONFIG_IP_FORWARD
+
     if (opt && opt->is_strictroute) {
           icmp_send(skb, ICMP_PARAMETERPROB, 0, 16, skb->dev);
           kfree_skb(skb, FREE_WRITE);
@@ -724,11 +725,11 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 
     if (ip_forward(skb, dev, is_frag, iph->daddr))
         kfree_skb(skb, FREE_WRITE);
+
 #else
-/*    printk("Machine %lx tried to use us as a forwarder to %lx but we have forwarding disabled!\n",
-            iph->saddr,iph->daddr);*/
     ip_statistics.IpInAddrErrors++;
     kfree_skb(skb, FREE_WRITE);
 #endif
+
     return(0);
 }

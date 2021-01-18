@@ -338,8 +338,9 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 				/* at the front or the back of the	*/
 				/* queue - front is a retransmit try	*/
 
-	if(pri>=0 && !skb_device_locked(skb))
+	if (pri >= 0 && !skb_device_locked(skb))
 		skb_device_lock(skb);	/* Shove a lock on the frame */
+
 #if CONFIG_SKB_CHECK
 	IS_SKB(skb);
 #endif
@@ -351,15 +352,13 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 	 *	start on a failure.
 	 */
 
-  	if (pri < 0)
-  	{
-		pri = -pri-1;
+  	if (pri < 0) {
+		pri = -pri - 1;
 		retransmission = 1;
   	}
 
 #ifdef CONFIG_NET_DEBUG
-	if (pri >= DEV_NUMBUFFS)
-	{
+	if (pri >= DEV_NUMBUFFS) {
 		printk(KERN_WARNING "bad priority in dev_queue_xmit.\n");
 		pri = 1;
 	}
@@ -369,7 +368,8 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 	 *	If the address has not been resolved. Call the device header rebuilder.
 	 *	This can cover all protocols and technically not just ARP either.
 	 */
-
+	// 如果mac地址还没解析出来, 调用 rebuild_header() 来解析mac地址
+	// rebuild_header() 一般指向 eth_rebuild_header()
 	if (!skb->arp && dev->rebuild_header(skb->data, dev, skb->raddr, skb)) {
 		return;
 	}
@@ -393,14 +393,13 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 	 */
 
 #ifdef CONFIG_BRIDGE
-	if(skb->pkt_bridged != IS_BRIDGED && br_stats.flags & BR_UP)
-	{
-		if(br_tx_frame(skb))
+	if (skb->pkt_bridged != IS_BRIDGED && br_stats.flags & BR_UP) {
+		if (br_tx_frame(skb))
 			return;
 	}
 #endif
 
-	list = dev->buffs + pri;
+	list = dev->buffs + pri; // 通过pri来选择优先队列
 
 	save_flags(flags);
 	/* if this isn't a retransmission, use the first packet instead... */
@@ -416,18 +415,19 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 		/* copy outgoing packets to any sniffer packet handlers */
 		if (dev_nit) {
 			struct packet_type *ptype;
-			skb->stamp=xtime;
-			for (ptype = ptype_all; ptype!=NULL; ptype = ptype->next)
-			{
+			skb->stamp = xtime;
+			for (ptype = ptype_all; ptype != NULL; ptype = ptype->next) {
 				/* Never send packets back to the socket
 				 * they originated from - MvS (miquels@drinkel.ow.org)
 				 */
-				if ((ptype->dev == dev || !ptype->dev) &&
-				   ((struct sock *)ptype->data != skb->sk))
+				if ((ptype->dev == dev || !ptype->dev)
+				    && ((struct sock *)ptype->data != skb->sk))
 				{
 					struct sk_buff *skb2;
+
 					if ((skb2 = skb_clone(skb, GFP_ATOMIC)) == NULL)
 						break;
+
 					skb2->h.raw = skb2->data + dev->hard_header_len;
 					skb2->mac.raw = skb2->data;
 					ptype->func(skb2, skb->dev, ptype);
@@ -444,7 +444,8 @@ static void do_dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
 			restore_flags(flags);
 		}
 	}
-	if (dev->hard_start_xmit(skb, dev) == 0) {
+
+	if (dev->hard_start_xmit(skb, dev) == 0) { // 通过硬件驱动把数据包发送出去
 		/*
 		 *	Packet is now solely the responsibility of the driver
 		 */
@@ -486,7 +487,8 @@ void netif_rx(struct sk_buff *skb)
 
 	skb->sk = NULL;
 	skb->free = 1;
-	if(skb->stamp.tv_sec==0)
+
+	if (skb->stamp.tv_sec==0)
 		skb->stamp = xtime;
 
 	/*

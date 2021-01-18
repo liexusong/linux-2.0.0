@@ -116,40 +116,41 @@ static void ip_loopback(struct device *old_dev, struct sk_buff *skb)
  *	Take an skb, and fill in the MAC header.
  */
 
-int ip_send(struct rtable * rt, struct sk_buff *skb, __u32 daddr, int len, struct device *dev, __u32 saddr)
+int ip_send(struct rtable *rt, struct sk_buff *skb, __u32 daddr, int len, struct device *dev, __u32 saddr)
 {
 	int mac = 0;
 
 	skb->dev = dev;
 	skb->arp = 1;
 	skb->protocol = htons(ETH_P_IP);
-	if (dev->hard_header)
-	{
+
+	if (dev->hard_header) {
 		/*
 		 *	Build a hardware header. Source address is our mac, destination unknown
 		 *  	(rebuild header will sort this out)
 		 */
-		skb_reserve(skb,(dev->hard_header_len+15)&~15);	/* 16 byte aligned IP headers are good */
-		if (rt && dev == rt->rt_dev && rt->rt_hh)
-		{
-			memcpy(skb_push(skb,dev->hard_header_len),rt->rt_hh->hh_data,dev->hard_header_len);
+		skb_reserve(skb, (dev->hard_header_len+15) & ~15);	/* 16 byte aligned IP headers are good */
+
+		if (rt && dev == rt->rt_dev && rt->rt_hh) {
+			memcpy(skb_push(skb,dev->hard_header_len), rt->rt_hh->hh_data, dev->hard_header_len);
+
 			if (rt->rt_hh->hh_uptodate)
 				return dev->hard_header_len;
-#if RT_CACHE_DEBUG >= 2
-			printk("ip_send: hh miss %08x via %08x\n", daddr, rt->rt_gateway);
-#endif
+
 			skb->arp = 0;
 			skb->raddr = daddr;
+
 			return dev->hard_header_len;
 		}
+
 		mac = dev->hard_header(skb, dev, ETH_P_IP, NULL, NULL, len);
-		if (mac < 0)
-		{
+		if (mac < 0) { // 如果小于0, 需要使用ARP协议来查找mac地址
 			mac = -mac;
 			skb->arp = 0;
 			skb->raddr = daddr;	/* next routing address */
 		}
 	}
+
 	return mac;
 }
 
@@ -437,8 +438,7 @@ ip_queue_xmit(struct sock *sk, struct device *dev, struct sk_buff *skb, int free
 	 *	More debugging. You cannot queue a packet already on a list
 	 *	Spot this and moan loudly.
 	 */
-	if (skb->next != NULL)
-	{
+	if (skb->next != NULL) {
 		NETDEBUG(printk("ip_queue_xmit: next != NULL\n"));
 		skb_unlink(skb);
 	}
@@ -458,21 +458,15 @@ ip_queue_xmit(struct sock *sk, struct device *dev, struct sk_buff *skb, int free
 	 *	Multicasts are looped back for other local users
 	 */
 
-	if (MULTICAST(iph->daddr) && !(dev->flags&IFF_LOOPBACK))
-	{
-		if(sk==NULL || sk->ip_mc_loop)
-		{
-			if(iph->daddr==IGMP_ALL_HOSTS || (dev->flags&IFF_ALLMULTI))
-			{
+	if (MULTICAST(iph->daddr) && !(dev->flags&IFF_LOOPBACK)) {
+		if (sk == NULL || sk->ip_mc_loop) {
+			if(iph->daddr==IGMP_ALL_HOSTS || (dev->flags&IFF_ALLMULTI)) {
 				ip_loopback(dev,skb);
-			}
-			else
-			{
+			} else {
 				struct ip_mc_list *imc=dev->ip_mc_list;
-				while(imc!=NULL)
-				{
-					if(imc->multiaddr==iph->daddr)
-					{
+
+				while (imc != NULL) {
+					if(imc->multiaddr == iph->daddr) {
 						ip_loopback(dev,skb);
 						break;
 					}
@@ -485,14 +479,14 @@ ip_queue_xmit(struct sock *sk, struct device *dev, struct sk_buff *skb, int free
 		if (iph->ttl==0)
 			goto out;
 	}
+
 #endif
 	if ((dev->flags & IFF_BROADCAST)
 		&& !(dev->flags & IFF_LOOPBACK)
 	    && (iph->daddr==dev->pa_brdaddr || iph->daddr==0xFFFFFFFF))
 		ip_loopback(dev,skb);
 
-	if (dev->flags & IFF_UP)
-	{
+	if (dev->flags & IFF_UP) {
 		/*
 		 *	If we have an owner use its priority setting,
 		 *	otherwise use NORMAL
@@ -504,9 +498,12 @@ ip_queue_xmit(struct sock *sk, struct device *dev, struct sk_buff *skb, int free
 		dev_queue_xmit(skb, dev, priority); // 通过硬件把包发送出去
 		return;
 	}
-	if(sk)
+
+	if (sk)
 		sk->err = ENETDOWN;
+
 	ip_statistics.IpOutDiscards++;
+
 out:
 	if (free)
 		kfree_skb(skb, FREE_WRITE);
@@ -574,12 +571,11 @@ int ip_build_xmit(struct sock *sk,
 	ip_statistics.IpOutRequests++;
 
 #ifdef CONFIG_IP_MULTICAST
-	if(MULTICAST(daddr) && *sk->ip_mc_name)
-	{
-		dev=dev_get(sk->ip_mc_name);
+	if (MULTICAST(daddr) && *sk->ip_mc_name) {
+		dev = dev_get(sk->ip_mc_name);
 		if(!dev)
 			return -ENODEV;
-		rt=NULL;
+		rt = NULL;
 		if (sk->saddr && (!LOOPBACK(sk->saddr) || LOOPBACK(daddr)))
 			saddr = sk->saddr;
 		else
@@ -591,8 +587,7 @@ int ip_build_xmit(struct sock *sk,
 		rt = ip_check_route(&sk->ip_route_cache, daddr,
 							sk->localroute || (flags&MSG_DONTROUTE) ||
 							(opt && opt->is_strictroute));
-		if (rt == NULL)
-		{
+		if (rt == NULL) {
 			ip_statistics.IpOutNoRoutes++;
 			return(-ENETUNREACH);
 		}
@@ -606,6 +601,7 @@ int ip_build_xmit(struct sock *sk,
 		dev=rt->rt_dev;
 #ifdef CONFIG_IP_MULTICAST
 	}
+
 	if (rt && !dev)
 		dev = rt->rt_dev;
 #endif
@@ -624,18 +620,23 @@ int ip_build_xmit(struct sock *sk,
 
 	if (!sk->ip_hdrincl) {
 		length += sizeof(struct iphdr);
-		if(opt) length += opt->optlen;
+		if (opt)
+			length += opt->optlen;
 	}
 
-	if(length <= dev->mtu && !MULTICAST(daddr) && daddr!=0xFFFFFFFF && daddr!=dev->pa_brdaddr)
+	if (length <= dev->mtu
+		&& !MULTICAST(daddr)
+		&& daddr != 0xFFFFFFFF
+		&& daddr != dev->pa_brdaddr)
 	{
 		int error;
-		struct sk_buff *skb=sock_alloc_send_skb(sk, length+15+dev->hard_header_len,0, noblock, &error);
-		if(skb==NULL)
-		{
+		struct sk_buff *skb = sock_alloc_send_skb(sk,
+				length + 15 + dev->hard_header_len, 0, noblock, &error);
+		if (skb == NULL) {
 			ip_statistics.IpOutDiscards++;
 			return error;
 		}
+
 		skb->dev=dev;
 		skb->protocol = htons(ETH_P_IP);
 		skb->free=1;
@@ -645,16 +646,12 @@ int ip_build_xmit(struct sock *sk,
 		skb->saddr=saddr;
 		skb->raddr = raddr;
 		skb_reserve(skb,(dev->hard_header_len+15)&~15);
-		if (hh)
-		{
+
+		if (hh) {
 			skb->arp=1;
 			memcpy(skb_push(skb,dev->hard_header_len),hh->hh_data,dev->hard_header_len);
-			if (!hh->hh_uptodate)
-			{
+			if (!hh->hh_uptodate) {
 				skb->arp = 0;
-#if RT_CACHE_DEBUG >= 2
-				printk("ip_build_xmit: hh miss %08x via %08x\n", rt->rt_dst, rt->rt_gateway);
-#endif
 			}
 		}
 		else if(dev->hard_header)
