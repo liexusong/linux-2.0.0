@@ -540,7 +540,7 @@ fragment:
 // 把数据包发送出去(一般是UDP和RAW协议使用)
 int ip_build_xmit(
 	struct sock *sk,
-	void (*getfrag)(const void *, __u32, char *, unsigned int, unsigned int),
+	void (*getfrag)(const void *, __u32, char *, unsigned int, unsigned int), // 复制数据和计算传输层checksum
 	const void *frag,            // 数据地址
 	unsigned short int length,   // 数据长度
 	__u32 daddr,                 // 目标IP地址
@@ -633,8 +633,8 @@ int ip_build_xmit(
 	{
 		int error;
 		struct sk_buff *skb =
-				sock_alloc_send_skb(sk, length + 15 + dev->hard_header_len, 0,
-									noblock, &error);
+				sock_alloc_send_skb(sk, length + 15 + dev->hard_header_len,
+									0, noblock, &error);
 		if (skb == NULL) {
 			ip_statistics.IpOutDiscards++;
 			return error;
@@ -649,28 +649,31 @@ int ip_build_xmit(
 		skb->saddr = saddr;
 		skb->raddr = raddr;
 
-		skb_reserve(skb,(dev->hard_header_len + 15)&~15);
+		skb_reserve(skb, (dev->hard_header_len + 15) & ~15); // 保留mac头部空间
 
-		// 构建mac头部
+		// 1. 构建mac头部
 		if (hh) {
 			skb->arp = 1;
-			memcpy(skb_push(skb,dev->hard_header_len),
-				   hh->hh_data,dev->hard_header_len);
+
+			memcpy(skb_push(skb, dev->hard_header_len),
+				   hh->hh_data, dev->hard_header_len);
+
 			if (!hh->hh_uptodate) {
 				skb->arp = 0;
 			}
 
 		} else if (dev->hard_header) {
-			if (dev->hard_header(skb,dev,ETH_P_IP,NULL,NULL,0) > 0)
+			if (dev->hard_header(skb, dev, ETH_P_IP, NULL, NULL, 0) > 0)
 				skb->arp = 1;
 		}
 		else
 			skb->arp = 1;
 
-		// 构建IP头部
+		// 2. 构建IP头部
 		skb->ip_hdr = iph = (struct iphdr *)skb_put(skb, length);
 
 		dev_lock_list();
+
 		if (!sk->ip_hdrincl) {
 			iph->version = 4;
 			iph->ihl = 5;
@@ -691,7 +694,13 @@ int ip_build_xmit(
 			iph->check = 0;
 			iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
 
-			getfrag(frag, saddr, ((char *)iph)+iph->ihl*4, 0, length-iph->ihl*4);
+			// 复制数据和计算传输层checksum
+
+			getfrag(frag,                      // 参数1: 由调用方提供的上下文参数(一般用于提供数据源的开始地址)
+					saddr,                     // 参数2: 源IP地址
+					((char *)iph)+iph->ihl*4,  // 参数3: 数据存放的地址
+					0,                         // 参数4: 复制数据开始的偏移量
+					length-iph->ihl*4);        // 参数5: 复制数据的长度
 		}
 		else
 			getfrag(frag, saddr, (void *)iph, 0, length);
@@ -728,7 +737,7 @@ int ip_build_xmit(
 						+ sizeof(struct iphdr)
 						+ opt->optlen;
 
-		maxfraglen = ((dev->mtu-sizeof(struct iphdr)-opt->optlen) & ~7)
+		maxfraglen = ((dev->mtu - sizeof(struct iphdr) - opt->optlen) & ~7)
 						+ fragheaderlen;
 
 	} else {
@@ -866,7 +875,7 @@ int ip_build_xmit(
 			iph->tos = sk->ip_tos;
 			iph->tot_len = htons(fraglen - fragheaderlen + iph->ihl*4);
 			iph->id = id;
-			iph->frag_off = htons(offset>>3);
+			iph->frag_off = htons(offset >> 3);
 			iph->frag_off |= mf;
 
 #ifdef CONFIG_IP_MULTICAST

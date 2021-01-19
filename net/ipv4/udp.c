@@ -226,17 +226,17 @@ struct udpfakehdr
  *	for direct user->board I/O transfers. That one will be fun.
  */
 
-static void udp_getfrag(const void *p, __u32 saddr, char * to,
+static void udp_getfrag(const void *p, __u32 saddr, char *to,
 						unsigned int offset, unsigned int fraglen)
 {
 	struct udpfakehdr *ufh = (struct udpfakehdr *)p;
-	const char *src;
-	char *dst;
-	unsigned int len;
+	const char *src;  // 数据开始的指针
+	char *dst;        // 数据保存的指针
+	unsigned int len; // 要复制的数据长度
 
 	if (offset) {
 		len = fraglen;
-	 	src = ufh->from + (offset-sizeof(struct udphdr));
+	 	src = ufh->from + (offset - sizeof(struct udphdr));
 	 	dst = to;
 	} else {
 		len = fraglen - sizeof(struct udphdr);
@@ -244,15 +244,17 @@ static void udp_getfrag(const void *p, __u32 saddr, char * to,
 		dst = to + sizeof(struct udphdr);
 	}
 
-	ufh->wcheck = csum_partial_copy_fromuser(src, dst, len, ufh->wcheck);
+	ufh->wcheck = csum_partial_copy_fromuser(src, dst, len, ufh->wcheck); // 复制数据并且计算checksum
 	if (offset == 0) {
  		ufh->wcheck = csum_partial((char *)ufh, sizeof(struct udphdr),
  								   ufh->wcheck);
-		ufh->uh.check = csum_tcpudp_magic(saddr, ufh->daddr,
-										  ntohs(ufh->uh.len),
+
+		ufh->uh.check = csum_tcpudp_magic(saddr, ufh->daddr, ntohs(ufh->uh.len),
 										  IPPROTO_UDP, ufh->wcheck);
+
 		if (ufh->uh.check == 0)
 			ufh->uh.check = -1;
+
 		memcpy(to, ufh, sizeof(struct udphdr));
 	}
 }
@@ -264,7 +266,8 @@ static void udp_getfrag(const void *p, __u32 saddr, char * to,
  *	this is a valid decision.
  */
 
-static void udp_getfrag_nosum(const void *p, __u32 saddr, char * to, unsigned int offset, unsigned int fraglen)
+static void udp_getfrag_nosum(const void *p, __u32 saddr, char *to,
+							  unsigned int offset, unsigned int fraglen)
 {
 	struct udpfakehdr *ufh = (struct udpfakehdr *)p;
 	const char *src;
@@ -273,15 +276,15 @@ static void udp_getfrag_nosum(const void *p, __u32 saddr, char * to, unsigned in
 
 	if (offset) {
 		len = fraglen;
-	 	src = ufh->from+(offset-sizeof(struct udphdr));
+	 	src = ufh->from + (offset - sizeof(struct udphdr));
 	 	dst = to;
 	} else {
-		len = fraglen - sizeof(struct udphdr);
+		len = fraglen - sizeof(struct udphdr); // 跳过UDP头部
  		src = ufh->from;
 		dst = to + sizeof(struct udphdr);
 	}
 
-	memcpy_fromfs(dst,src,len);
+	memcpy_fromfs(dst, src, len);
 
 	if (offset == 0)
 		memcpy(to, ufh, sizeof(struct udphdr));
@@ -328,6 +331,7 @@ static int udp_send(struct sock *sk, struct sockaddr_in *sin,
 			return(-EINVAL);
 		if (sinfrom->sin_port == 0)
 			return(-EINVAL);
+
 		saddr = sinfrom->sin_addr.s_addr;
 		ufh.uh.source = sinfrom->sin_port;
 	}
@@ -346,6 +350,7 @@ static int udp_send(struct sock *sk, struct sockaddr_in *sin,
 		a = ip_build_xmit(sk, udp_getfrag, &ufh, ulen,
 						  sin->sin_addr.s_addr, saddr, sk->opt,
 						  rt, IPPROTO_UDP, noblock);
+
 	if (a < 0)
 		return a;
 
