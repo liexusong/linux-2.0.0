@@ -728,6 +728,8 @@ int ip_build_xmit(
 		return 0;
 	}
 
+	// 下面处理分片的情况
+
 	if (!sk->ip_hdrincl)
 		length -= sizeof(struct iphdr);
 
