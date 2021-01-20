@@ -274,7 +274,7 @@ static void udp_getfrag_nosum(const void *p, __u32 saddr, char *to,
 	char *dst;
 	unsigned int len;
 
-	if (offset) {
+	if (offset) { // UDP包的数据部分
 		len = fraglen;
 	 	src = ufh->from + (offset - sizeof(struct udphdr));
 	 	dst = to;

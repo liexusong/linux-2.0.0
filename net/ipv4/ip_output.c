@@ -367,7 +367,7 @@ static inline void add_to_send_queue(struct sock *sk, struct sk_buff *skb)
  * This routine also needs to put in the total length,
  * and compute the checksum
  */
-// IP层的发送数据包(数据包会先放入到队列中)
+// 发送数据包（已经构建好所有的头部），一般TCP协议使用
 void
 ip_queue_xmit(struct sock *sk, struct device *dev, struct sk_buff *skb, int free)
 {
@@ -513,7 +513,7 @@ no_device:
 	goto out;
 
 fragment:
-	ip_fragment(sk,skb,dev,0);
+	ip_fragment(sk, skb, dev, 0); // 分片发送
 	goto out;
 }
 
@@ -537,7 +537,7 @@ fragment:
  *	length to be copied.
  *
  */
-// 把数据包发送出去(一般是UDP和RAW协议使用)
+// 把数据包发送出去（需要本函数构建头部），一般是UDP、RAW和ICMP协议使用
 int ip_build_xmit(
 	struct sock *sk,
 	void (*getfrag)(const void *, __u32, char *, unsigned int, unsigned int), // 复制数据和计算传输层checksum
@@ -735,10 +735,12 @@ int ip_build_xmit(
 
 	if (opt) {
 		length -= opt->optlen;
+		// 头部长度
 		fragheaderlen = dev->hard_header_len
 						+ sizeof(struct iphdr)
 						+ opt->optlen;
 
+		// 帧最大长度
 		maxfraglen = ((dev->mtu - sizeof(struct iphdr) - opt->optlen) & ~7)
 						+ fragheaderlen;
 
@@ -752,24 +754,24 @@ int ip_build_xmit(
 		 *	out the size of the frames to send.
 		 */
 
-		maxfraglen = ((dev->mtu-20) & ~7) + fragheaderlen;
+		maxfraglen = ((dev->mtu - 20) & ~7) + fragheaderlen;
 	}
 
 	/*
 	 *	Start at the end of the frame by handling the remainder.
 	 */
-
-	offset = length - (length % (maxfraglen - fragheaderlen));
+	// maxfraglen - fragheaderlen 等于帧能存储负载数据的长度
+	offset = length - (length % (maxfraglen - fragheaderlen)); // 不足一个帧的数据偏移量
 
 	/*
 	 *	Amount of memory to allocate for final fragment.
 	 */
 
-	fraglen = length - offset + fragheaderlen;
+	fraglen = length - offset + fragheaderlen; // 第一个包的长度
 
-	if (length - offset == 0) {
+	if (length - offset == 0) { // 如果length刚好等于包能容纳的大小的倍数, 即: (length == n*(maxfraglen-fragheaderlen))
 		fraglen = maxfraglen;
-		offset -= maxfraglen - fragheaderlen;
+		offset -= maxfraglen - fragheaderlen; // 修证偏移量
 	}
 
 
@@ -831,6 +833,7 @@ int ip_build_xmit(
 		skb->daddr = daddr;
 		skb->raddr = raddr;
 
+		// 先保留MAC头部空间
 		skb_reserve(skb, (dev->hard_header_len+15) & ~15);
 
 		data = skb_put(skb, fraglen - dev->hard_header_len);
@@ -841,10 +844,10 @@ int ip_build_xmit(
 		 *	this can be fixed later. For gateway routes we ought to have a rt->.. header cache
 		 *	pointer to speed header cache builds for identical targets.
 		 */
-
+		// 构建mac头部
 		if (hh) {
 			skb->arp = 1;
-			memcpy(skb_push(skb,dev->hard_header_len),
+			memcpy(skb_push(skb, dev->hard_header_len),
 				   hh->hh_data,dev->hard_header_len);
 
 			if (!hh->hh_uptodate) {
@@ -865,6 +868,7 @@ int ip_build_xmit(
 		/*
 		 *	Only write IP header onto non-raw packets
 		 */
+		// 构建IP头部
 		if (!sk->ip_hdrincl) {
 			iph->version = 4;
 			iph->ihl = 5; /* ugh */
@@ -904,6 +908,7 @@ int ip_build_xmit(
 		/*
 		 *	User data callback
 		 */
+		// 复制传输层数据
 		getfrag(frag, saddr, data, offset, fraglen - fragheaderlen);
 
 		/*
@@ -925,6 +930,8 @@ int ip_build_xmit(
 		if(!offset)
 			ip_fw_chk(iph, dev, NULL, ip_acct_chain, 0, IP_FW_MODE_ACCT_OUT);
 #endif
+
+		// 这里要修证偏移量和数据包的大小
 		offset -= (maxfraglen-fragheaderlen);
 		fraglen = maxfraglen;
 
@@ -969,6 +976,7 @@ int ip_build_xmit(
 				continue;
 			}
 		}
+
 #endif
 
 		nfrags++;
@@ -976,7 +984,6 @@ int ip_build_xmit(
 		/*
 		 *	BSD loops broadcasts
 		 */
-
 		if ((dev->flags & IFF_BROADCAST)
 			&& (daddr == 0xFFFFFFFF || daddr == dev->pa_brdaddr)
 			&& !(dev->flags & IFF_LOOPBACK))
@@ -985,13 +992,9 @@ int ip_build_xmit(
 		/*
 		 *	Now queue the bytes into the device.
 		 */
-		if (dev->flags & IFF_UP) {
-			dev_queue_xmit(skb, dev, sk->priority);
+		if (dev->flags & IFF_UP) {                  // 如果设备处于打开状态的话
+			dev_queue_xmit(skb, dev, sk->priority); // 把数据通过设备发送出去
 		} else {
-			/*
-			 *	Whoops...
-			 */
-
 			ip_statistics.IpOutDiscards++;
 			if (nfrags > 1)
 				ip_statistics.IpFragCreates += nfrags;
