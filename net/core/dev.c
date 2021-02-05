@@ -150,7 +150,7 @@ void dev_add_pack(struct packet_type *pt)
 {
 	int hash;
 
-	if(pt->type == htons(ETH_P_ALL)) {
+	if (pt->type == htons(ETH_P_ALL)) {
 		dev_nit++;
 		pt->next = ptype_all;
 		ptype_all = pt;
@@ -169,18 +169,17 @@ void dev_add_pack(struct packet_type *pt)
 void dev_remove_pack(struct packet_type *pt)
 {
 	struct packet_type **pt1;
-	if(pt->type==htons(ETH_P_ALL))
-	{
+
+	if (pt->type == htons(ETH_P_ALL)) {
 		dev_nit--;
-		pt1=&ptype_all;
+		pt1 = &ptype_all;
 	}
 	else
-		pt1=&ptype_base[ntohs(pt->type)&15];
-	for(; (*pt1)!=NULL; pt1=&((*pt1)->next))
-	{
-		if(pt==(*pt1))
-		{
-			*pt1=pt->next;
+		pt1 = &ptype_base[ntohs(pt->type)&15];
+
+	for (; (*pt1) != NULL; pt1 = &((*pt1)->next)) {
+		if (pt == (*pt1)) {
+			*pt1 = pt->next;
 			return;
 		}
 	}
@@ -201,8 +200,7 @@ struct device *dev_get(const char *name)
 {
 	struct device *dev;
 
-	for (dev = dev_base; dev != NULL; dev = dev->next)
-	{
+	for (dev = dev_base; dev != NULL; dev = dev->next) {
 		if (strcmp(dev->name, name) == 0)
 			return(dev);
 	}
@@ -531,8 +529,7 @@ static void dev_transmit(void)
 {
 	struct device *dev;
 
-	for (dev = dev_base; dev != NULL; dev = dev->next)
-	{
+	for (dev = dev_base; dev != NULL; dev = dev->next) {
 		if (dev->flags != 0 && !dev->tbusy) {
 			/*
 			 *	Kick the device
@@ -648,24 +645,26 @@ void net_bh(void)
 
 		pt_prev = NULL;
 		for (ptype = ptype_all; ptype != NULL; ptype = ptype->next) {
-			if(pt_prev) {
+			if (pt_prev) {
 				struct sk_buff *skb2 = skb_clone(skb, GFP_ATOMIC);
-				if(skb2)
+				if (skb2)
 					pt_prev->func(skb2,skb->dev, pt_prev);
 			}
-			pt_prev=ptype;
+			pt_prev = ptype;
 		}
 
-		for (ptype = ptype_base[ntohs(type)&15]; ptype != NULL; ptype = ptype->next)
+		for (ptype = ptype_base[ntohs(type)&15];
+			 ptype != NULL;
+			 ptype = ptype->next)
 		{
-			if (ptype->type == type && (!ptype->dev || ptype->dev==skb->dev))
+			if (ptype->type == type
+				&& (!ptype->dev || ptype->dev==skb->dev))
 			{
 				/*
 				 *	We already have a match queued. Deliver
 				 *	to it and then remember the new match
 				 */
-				if(pt_prev)
-				{
+				if (pt_prev) {
 					struct sk_buff *skb2;
 
 					skb2 = skb_clone(skb, GFP_ATOMIC);
@@ -675,7 +674,7 @@ void net_bh(void)
 					 *	and efficient code.
 					 */
 
-					if(skb2)
+					if (skb2)
 						pt_prev->func(skb2, skb->dev, pt_prev);
 				}
 				/* Remember the current last to do */
@@ -687,7 +686,7 @@ void net_bh(void)
 		 *	Is there a last item to send to ?
 		 */
 
-		if(pt_prev)
+		if (pt_prev)
 			pt_prev->func(skb, skb->dev, pt_prev); // 如果是 IP 协议, 那么调用的是 ip_rcv()
 		/*
 		 * 	Has an unknown packet has been received ?
@@ -744,9 +743,7 @@ void dev_tint(struct device *dev)
 	/*
 	 *	Work the queues in priority order
 	 */
-	for(i = 0;i < DEV_NUMBUFFS; i++,head++)
-	{
-
+	for (i = 0;i < DEV_NUMBUFFS; i++,head++) {
 		while (!skb_queue_empty(head)) {
 			struct sk_buff *skb;
 
@@ -770,6 +767,7 @@ void dev_tint(struct device *dev)
 			cli();
 		}
 	}
+
 	restore_flags(flags);
 }
 
@@ -793,9 +791,10 @@ static int dev_ifconf(char *arg)
 	 *	Fetch the caller's info block.
 	 */
 
-	err=verify_area(VERIFY_WRITE, arg, sizeof(struct ifconf));
-	if(err)
+	err = verify_area(VERIFY_WRITE, arg, sizeof(struct ifconf));
+	if (err)
 	  	return err;
+
 	memcpy_fromfs(&ifc, arg, sizeof(struct ifconf));
 	len = ifc.ifc_len;
 	pos = ifc.ifc_buf;
@@ -805,17 +804,16 @@ static int dev_ifconf(char *arg)
 	 *	into the array.
 	 */
 
-	err=verify_area(VERIFY_WRITE,pos,len);
-	if(err)
+	err = verify_area(VERIFY_WRITE,pos,len);
+	if (err)
 	  	return err;
 
 	/*
 	 *	Loop over the interfaces, and write an info block for each.
 	 */
 
-	for (dev = dev_base; dev != NULL; dev = dev->next)
-	{
-		if(!(dev->flags & IFF_UP))	/* Downed devices don't count */
+	for (dev = dev_base; dev != NULL; dev = dev->next) {
+		if (!(dev->flags & IFF_UP))	/* Downed devices don't count */
 			continue;
 		/*
 		 *	Have we run out of space here ?
@@ -868,12 +866,12 @@ static int sprintf_stats(char *buffer, struct device *dev)
 
 	if (stats)
 		size = sprintf(buffer, "%6s:%7d %4d %4d %4d %4d %8d %4d %4d %4d %5d %4d\n",
-		   dev->name,
-		   stats->rx_packets, stats->rx_errors,
+		   dev->name, stats->rx_packets, stats->rx_errors,
 		   stats->rx_dropped + stats->rx_missed_errors,
 		   stats->rx_fifo_errors,
 		   stats->rx_length_errors + stats->rx_over_errors
-		   + stats->rx_crc_errors + stats->rx_frame_errors,
+		                           + stats->rx_crc_errors
+		                           + stats->rx_frame_errors,
 		   stats->tx_packets, stats->tx_errors, stats->tx_dropped,
 		   stats->tx_fifo_errors, stats->collisions,
 		   stats->tx_carrier_errors + stats->tx_aborted_errors
@@ -906,25 +904,26 @@ int dev_get_info(char *buffer, char **start, off_t offset, int length, int dummy
 	len+=size;
 
 
-	for (dev = dev_base; dev != NULL; dev = dev->next)
-	{
+	for (dev = dev_base; dev != NULL; dev = dev->next) {
 		size = sprintf_stats(buffer+len, dev);
-		len+=size;
-		pos=begin+len;
+		len += size;
+		pos = begin+len;
 
-		if(pos<offset)
-		{
-			len=0;
-			begin=pos;
+		if (pos < offset) {
+			len = 0;
+			begin = pos;
 		}
-		if(pos>offset+length)
+
+		if (pos > offset + length)
 			break;
 	}
 
-	*start=buffer+(offset-begin);	/* Start of wanted data */
-	len-=(offset-begin);		/* Start slop */
-	if(len>length)
-		len=length;		/* Ending slop */
+	*start = buffer + (offset-begin);	/* Start of wanted data */
+
+	len -= (offset-begin);		/* Start slop */
+	if (len > length)
+		len = length;		/* Ending slop */
+
 	return len;
 }
 #endif	/* CONFIG_PROC_FS */
@@ -961,8 +960,8 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 	 *	Fetch the caller's info block into kernel space
 	 */
 
-	int err=verify_area(VERIFY_WRITE, arg, sizeof(struct ifreq));
-	if(err)
+	int err = verify_area(VERIFY_WRITE, arg, sizeof(struct ifreq));
+	if (err)
 		return err;
 
 	memcpy_fromfs(&ifr, arg, sizeof(struct ifreq));
@@ -989,14 +988,13 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 	if ((dev = dev_get(ifr.ifr_name)) == NULL)
 		return(-ENODEV);
 #endif
-	switch(getset)
-	{
+	switch (getset) {
 		case SIOCGIFFLAGS:	/* Get interface flags */
 			ifr.ifr_flags = dev->flags;
 			goto rarok;
 
 		case SIOCSIFFLAGS:	/* Set interface flags */
-			{
+		{
 				int old_flags = dev->flags;
 
 				/*
@@ -1027,18 +1025,15 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 			  	 *	setting it.
 			  	 */
 
-			  	if ((old_flags^ifr.ifr_flags)&IFF_UP)	/* Bit is different  ? */
-			  	{
-					if(old_flags&IFF_UP)		/* Gone down */
-						ret=dev_close(dev);
-					else				/* Come up */
-					{
-						ret=dev_open(dev);
-						if(ret<0)
-							dev->flags&=~IFF_UP;	/* Open failed */
+			  	if ((old_flags^ifr.ifr_flags)&IFF_UP) {	/* Bit is different  ? */
+					if (old_flags&IFF_UP)		/* Gone down */
+						ret = dev_close(dev);
+					else {
+						ret = dev_open(dev);
+						if(ret < 0)
+							dev->flags &= ~IFF_UP;	/* Open failed */
 					}
-			  	}
-			  	else
+			  	} else
 			  		ret=0;
 				/*
 				 *	Load in the correct multicast list now the flags have changed.
@@ -1049,14 +1044,11 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 			break;
 
 		case SIOCGIFADDR:	/* Get interface address (and family) */
-			if(ifr.ifr_addr.sa_family==AF_UNSPEC)
-			{
+			if (ifr.ifr_addr.sa_family==AF_UNSPEC) {
 				memcpy(ifr.ifr_hwaddr.sa_data,dev->dev_addr, MAX_ADDR_LEN);
 				ifr.ifr_hwaddr.sa_family=dev->type;
 				goto rarok;
-			}
-			else
-			{
+			} else {
 				(*(struct sockaddr_in *)
 					  &ifr.ifr_addr).sin_addr.s_addr = dev->pa_addr;
 				(*(struct sockaddr_in *)
@@ -1073,23 +1065,24 @@ static int dev_ifsioc(void *arg, unsigned int getset)
 			 *	physical address. We can cope with this now.
 			 */
 
-			if(ifr.ifr_addr.sa_family==AF_UNSPEC)
-			{
+			if (ifr.ifr_addr.sa_family==AF_UNSPEC) {
 				if(dev->set_mac_address==NULL)
 					return -EOPNOTSUPP;
+
 				ret=dev->set_mac_address(dev,&ifr.ifr_addr);
-			}
-			else
-			{
+
+			} else {
 				u32 new_pa_addr = (*(struct sockaddr_in *)
-					 &ifr.ifr_addr).sin_addr.s_addr;
+					&ifr.ifr_addr).sin_addr.s_addr;
 				u16 new_family = ifr.ifr_addr.sa_family;
 
-				if (new_family == dev->family &&
-				    new_pa_addr == dev->pa_addr) {
+				if (new_family == dev->family
+					&& new_pa_addr == dev->pa_addr)
+				{
 					ret =0;
 					break;
 				}
+
 				if (dev->flags & IFF_UP)
 					notifier_call_chain(&netdev_chain, NETDEV_DOWN, dev);
 
@@ -1289,63 +1282,62 @@ rarok:
 
 int dev_ioctl(unsigned int cmd, void *arg)
 {
-	switch(cmd)
-	{
-		case SIOCGIFCONF:
-			(void) dev_ifconf((char *) arg);
-			return 0;
+	switch(cmd) {
+	case SIOCGIFCONF:
+		(void) dev_ifconf((char *) arg);
+		return 0;
 
-		/*
-		 *	Ioctl calls that can be done by all.
-		 */
+	/*
+	 *	Ioctl calls that can be done by all.
+	 */
 
-		case SIOCGIFFLAGS:
-		case SIOCGIFADDR:
-		case SIOCGIFDSTADDR:
-		case SIOCGIFBRDADDR:
-		case SIOCGIFNETMASK:
-		case SIOCGIFMETRIC:
-		case SIOCGIFMTU:
-		case SIOCGIFMEM:
-		case SIOCGIFHWADDR:
-		case SIOCSIFHWADDR:
-		case SIOCGIFSLAVE:
-		case SIOCGIFMAP:
+	case SIOCGIFFLAGS:
+	case SIOCGIFADDR:
+	case SIOCGIFDSTADDR:
+	case SIOCGIFBRDADDR:
+	case SIOCGIFNETMASK:
+	case SIOCGIFMETRIC:
+	case SIOCGIFMTU:
+	case SIOCGIFMEM:
+	case SIOCGIFHWADDR:
+	case SIOCSIFHWADDR:
+	case SIOCGIFSLAVE:
+	case SIOCGIFMAP:
+		return dev_ifsioc(arg, cmd);
+
+	/*
+	 *	Ioctl calls requiring the power of a superuser
+	 */
+
+	case SIOCSIFFLAGS:
+	case SIOCSIFADDR:
+	case SIOCSIFDSTADDR:
+	case SIOCSIFBRDADDR:
+	case SIOCSIFNETMASK:
+	case SIOCSIFMETRIC:
+	case SIOCSIFMTU:
+	case SIOCSIFMEM:
+	case SIOCSIFMAP:
+	case SIOCSIFSLAVE:
+	case SIOCADDMULTI:
+	case SIOCDELMULTI:
+		if (!suser())
+			return -EPERM;
+		return dev_ifsioc(arg, cmd);
+
+	case SIOCSIFLINK:
+		return -EINVAL;
+
+	/*
+	 *	Unknown or private ioctl.
+	 */
+
+	default:
+		if((cmd >= SIOCDEVPRIVATE) &&
+		   (cmd <= (SIOCDEVPRIVATE + 15))) {
 			return dev_ifsioc(arg, cmd);
-
-		/*
-		 *	Ioctl calls requiring the power of a superuser
-		 */
-
-		case SIOCSIFFLAGS:
-		case SIOCSIFADDR:
-		case SIOCSIFDSTADDR:
-		case SIOCSIFBRDADDR:
-		case SIOCSIFNETMASK:
-		case SIOCSIFMETRIC:
-		case SIOCSIFMTU:
-		case SIOCSIFMEM:
-		case SIOCSIFMAP:
-		case SIOCSIFSLAVE:
-		case SIOCADDMULTI:
-		case SIOCDELMULTI:
-			if (!suser())
-				return -EPERM;
-			return dev_ifsioc(arg, cmd);
-
-		case SIOCSIFLINK:
-			return -EINVAL;
-
-		/*
-		 *	Unknown or private ioctl.
-		 */
-
-		default:
-			if((cmd >= SIOCDEVPRIVATE) &&
-			   (cmd <= (SIOCDEVPRIVATE + 15))) {
-				return dev_ifsioc(arg, cmd);
-			}
-			return -EINVAL;
+		}
+		return -EINVAL;
 	}
 }
 
@@ -1370,7 +1362,7 @@ int net_dev_init(void)
 	 *	Initialise the packet receive queue.
 	 */
 
-	skb_queue_head_init(&backlog);
+	skb_queue_head_init(&backlog); // 初始化数据包堆积列表
 
 	/*
 	 *	The bridge has to be up before the devices
@@ -1407,9 +1399,9 @@ int net_dev_init(void)
 	 *	SLHC if present needs attaching so other people see it
 	 *	even if not opened.
 	 */
-#if (defined(CONFIG_SLIP) && defined(CONFIG_SLIP_COMPRESSED)) \
-	 || defined(CONFIG_PPP) \
-    || (defined(CONFIG_ISDN) && defined(CONFIG_ISDN_PPP))
+#if (defined(CONFIG_SLIP) && defined(CONFIG_SLIP_COMPRESSED))	\
+	 || defined(CONFIG_PPP)										\
+	 || (defined(CONFIG_ISDN) && defined(CONFIG_ISDN_PPP))
 	slhc_install();
 #endif
 
@@ -1421,22 +1413,19 @@ int net_dev_init(void)
 	 */
 
 	dp = &dev_base;
-	while ((dev = *dp) != NULL)
-	{
+
+	while ((dev = *dp) != NULL) {
 		int i;
 		for (i = 0; i < DEV_NUMBUFFS; i++)  {
 			skb_queue_head_init(dev->buffs + i);
 		}
 
-		if (dev->init && dev->init(dev))
-		{
+		if (dev->init && dev->init(dev)) {
 			/*
 			 *	It failed to come up. Unhook it.
 			 */
 			*dp = dev->next;
-		}
-		else
-		{
+		} else {
 			dp = &dev->next;
 		}
 	}

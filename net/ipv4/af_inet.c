@@ -1498,9 +1498,9 @@ struct sock *get_sock(struct proto *prot, unsigned short num,
  */
 
 struct sock *get_sock_raw(struct sock *sk,
-				unsigned short num,
-				unsigned long raddr,
-				unsigned long laddr)
+						  unsigned short num,
+						  unsigned long raddr,
+						  unsigned long laddr)
 {
 	struct sock *s;
 

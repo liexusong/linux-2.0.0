@@ -58,6 +58,7 @@ struct sk_buff
 	unsigned long when;				/* used to compute rtt's			*/
 	struct timeval stamp;			/* Time we arrived					*/
 	struct device *dev;				/* Device we arrived on/are leaving by*/
+
 	union
 	{
 		struct tcphdr	*th;     // TCP header
