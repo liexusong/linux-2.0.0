@@ -19,7 +19,7 @@
  * current->executable is only used by the procfs.  This allows a dispatch
  * table to check for several different types  of binary formats.  We keep
  * trying until we recognize the file or we run out of supported binary
- * formats. 
+ * formats.
  */
 
 #include <linux/fs.h>
@@ -93,7 +93,7 @@ int register_binfmt(struct linux_binfmt * fmt)
 	}
 	fmt->next = formats;
 	formats = fmt;
-	return 0;	
+	return 0;
 }
 
 #ifdef CONFIG_MODULES
@@ -215,12 +215,12 @@ static int count(char ** argv)
  *
  * Modified by TYT, 11/24/91 to add the from_kmem argument, which specifies
  * whether the string and the string array are from user or kernel segments:
- * 
+ *
  * from_kmem     argv *        argv **
  *    0          user space    user space
  *    1          kernel space  user space
  *    2          kernel space  kernel space
- * 
+ *
  * We do this by playing games with the fs segment register.  Since it
  * is expensive to load a segment register, we try to avoid calling
  * set_fs() unless we absolutely have to.
@@ -259,7 +259,7 @@ unsigned long copy_strings(int argc,char ** argv,unsigned long *page,
 					set_fs(old_fs);
 				if (!(pag = (char *) page[p/PAGE_SIZE]) &&
 				    !(pag = (char *) page[p/PAGE_SIZE] =
-				      (unsigned long *) get_free_page(GFP_USER))) 
+				      (unsigned long *) get_free_page(GFP_USER)))
 					return 0;
 				if (from_kmem==2)
 					set_fs(new_fs);
@@ -426,7 +426,7 @@ void flush_old_exec(struct linux_binprm * bprm)
 
 	flush_thread();
 
-	if (bprm->e_uid != current->euid || bprm->e_gid != current->egid || 
+	if (bprm->e_uid != current->euid || bprm->e_gid != current->egid ||
 	    permission(bprm->inode,MAY_READ))
 		current->dumpable = 0;
 	for (i=0 ; i<32 ; i++) {
@@ -441,8 +441,8 @@ void flush_old_exec(struct linux_binprm * bprm)
 	FD_ZERO(&current->files->close_on_exec);
 }
 
-/* 
- * Fill the binprm structure from the inode. 
+/*
+ * Fill the binprm structure from the inode.
  * Check permissions, then read the first 512 bytes
  */
 int prepare_binprm(struct linux_binprm *bprm)
@@ -450,6 +450,7 @@ int prepare_binprm(struct linux_binprm *bprm)
 	int mode;
 	int retval,id_change;
 
+	// 判断文件是否正确
 	mode = bprm->inode->i_mode;
 	if (!S_ISREG(mode))			/* must be regular file */
 		return -EACCES;
@@ -459,10 +460,10 @@ int prepare_binprm(struct linux_binprm *bprm)
 		return -EACCES;
 	if (!bprm->inode->i_sb)
 		return -EACCES;
-	if ((retval = permission(bprm->inode, MAY_EXEC)) != 0)
+	if ((retval = permission(bprm->inode, MAY_EXEC)) != 0) // 有没有执行权限?
 		return retval;
 	/* better not execute files which are being written to */
-	if (bprm->inode->i_writecount > 0)
+	if (bprm->inode->i_writecount > 0) // 有进程正在写这个文件
 		return -ETXTBSY;
 
 	bprm->e_uid = current->euid;
@@ -503,7 +504,7 @@ int prepare_binprm(struct linux_binprm *bprm)
 	}
 
 	memset(bprm->buf,0,sizeof(bprm->buf));
-	return read_exec(bprm->inode,0,bprm->buf,128,1);
+	return read_exec(bprm->inode,0,bprm->buf,128,1); // 读取文件头部的128个字节
 }
 
 void remove_arg_zero(struct linux_binprm *bprm)
@@ -603,10 +604,10 @@ int do_execve(char * filename, char ** argv, char ** envp, struct pt_regs * regs
 	int retval;
 	int i;
 
-	bprm.p = PAGE_SIZE*MAX_ARG_PAGES-sizeof(void *);
+	bprm.p = PAGE_SIZE*MAX_ARG_PAGES-sizeof(void *); // 参数能够使用的最大空间
 	for (i=0 ; i<MAX_ARG_PAGES ; i++)	/* clear page-table */
 		bprm.page[i] = 0;
-	retval = open_namei(filename, 0, 0, &bprm.inode, NULL);
+	retval = open_namei(filename, 0, 0, &bprm.inode, NULL); // 打开可执行文件
 	if (retval)
 		return retval;
 	bprm.filename = filename;
@@ -614,13 +615,13 @@ int do_execve(char * filename, char ** argv, char ** envp, struct pt_regs * regs
 	bprm.loader = 0;
 	bprm.exec = 0;
 	bprm.dont_iput = 0;
-	if ((bprm.argc = count(argv)) < 0)
+	if ((bprm.argc = count(argv)) < 0) // 计算有几个参数
 		return bprm.argc;
-	if ((bprm.envc = count(envp)) < 0)
+	if ((bprm.envc = count(envp)) < 0) // 计算有几个环境变量
 		return bprm.envc;
 
 	retval = prepare_binprm(&bprm);
-	
+
 	if(retval>=0) {
 		bprm.p = copy_strings(1, &bprm.filename, bprm.page, bprm.p, 2);
 		bprm.exec = bprm.p;
