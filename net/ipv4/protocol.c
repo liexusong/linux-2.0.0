@@ -49,10 +49,10 @@
 #ifdef CONFIG_IP_FORWARD
 #ifdef CONFIG_NET_IPIP
 
-static struct inet_protocol ipip_protocol = 
+static struct inet_protocol ipip_protocol =
 {
-	ipip_rcv,             /* IPIP handler          */
-	NULL,                 /* TUNNEL error control    */
+	ipip_rcv,             /* IPIP handler         */
+	NULL,                 /* TUNNEL error control */
 	0,                    /* next                 */
 	IPPROTO_IPIP,         /* protocol ID          */
 	0,                    /* copy                 */
@@ -60,27 +60,25 @@ static struct inet_protocol ipip_protocol =
 	"IPIP"                /* name                 */
 };
 
-
 #endif
 #endif
 
-static struct inet_protocol tcp_protocol = 
+static struct inet_protocol tcp_protocol =
 {
 	tcp_rcv,		/* TCP handler		*/
-	tcp_err,		/* TCP error control	*/  
+	tcp_err,		/* TCP error control	*/
 #if defined(CONFIG_NET_IPIP) && defined(CONFIG_IP_FORWARD)
 	&ipip_protocol,
-#else  
+#else
 	NULL,			/* next			*/
-#endif  
+#endif
 	IPPROTO_TCP,		/* protocol ID		*/
 	0,			/* copy			*/
 	NULL,			/* data			*/
 	"TCP"			/* name			*/
 };
 
-
-static struct inet_protocol udp_protocol = 
+static struct inet_protocol udp_protocol =
 {
 	udp_rcv,		/* UDP handler		*/
 	udp_err,		/* UDP error control	*/
@@ -91,8 +89,7 @@ static struct inet_protocol udp_protocol =
 	"UDP"			/* name			*/
 };
 
-
-static struct inet_protocol icmp_protocol = 
+static struct inet_protocol icmp_protocol =
 {
 	icmp_rcv,		/* ICMP handler		*/
 	NULL,			/* ICMP error control	*/
@@ -106,7 +103,7 @@ static struct inet_protocol icmp_protocol =
 #ifndef CONFIG_IP_MULTICAST
 struct inet_protocol *inet_protocol_base = &icmp_protocol;
 #else
-static struct inet_protocol igmp_protocol = 
+static struct inet_protocol igmp_protocol =
 {
 	igmp_rcv,		/* IGMP handler		*/
 	NULL,			/* IGMP error control	*/
@@ -120,7 +117,7 @@ static struct inet_protocol igmp_protocol =
 struct inet_protocol *inet_protocol_base = &igmp_protocol;
 #endif
 
-struct inet_protocol *inet_protos[MAX_INET_PROTOS] = 
+struct inet_protocol *inet_protos[MAX_INET_PROTOS] =
 {
 	NULL
 };
@@ -137,9 +134,9 @@ struct inet_protocol *inet_get_protocol(unsigned char prot)
 	struct inet_protocol *p;
 
 	hash = prot & (MAX_INET_PROTOS - 1);
-	for (p = inet_protos[hash] ; p != NULL; p=p->next) 
+	for (p = inet_protos[hash] ; p != NULL; p=p->next)
 	{
-		if (p->protocol == prot) 
+		if (p->protocol == prot)
 			return((struct inet_protocol *) p);
 	}
 	return(NULL);
@@ -155,19 +152,18 @@ void inet_add_protocol(struct inet_protocol *prot)
 	struct inet_protocol *p2;
 
 	hash = prot->protocol & (MAX_INET_PROTOS - 1);
-	prot ->next = inet_protos[hash];
+	prot->next = inet_protos[hash];
 	inet_protos[hash] = prot;
 	prot->copy = 0;
 
 	/*
-	 *	Set the copy bit if we need to. 
+	 *	Set the copy bit if we need to.
 	 */
-	 
-	p2 = (struct inet_protocol *) prot->next;
-	while(p2 != NULL) 
-	{
-		if (p2->protocol == prot->protocol) 
-		{
+
+	p2 = (struct inet_protocol *)prot->next;
+
+	while (p2 != NULL) {
+		if (p2->protocol == prot->protocol) {
 			prot->copy = 1;
 			break;
 		}
@@ -178,7 +174,7 @@ void inet_add_protocol(struct inet_protocol *prot)
 /*
  *	Remove a protocol from the hash tables.
  */
- 
+
 int inet_del_protocol(struct inet_protocol *prot)
 {
 	struct inet_protocol *p;
@@ -186,32 +182,32 @@ int inet_del_protocol(struct inet_protocol *prot)
 	unsigned char hash;
 
 	hash = prot->protocol & (MAX_INET_PROTOS - 1);
-	if (prot == inet_protos[hash]) 
+	if (prot == inet_protos[hash])
 	{
 		inet_protos[hash] = (struct inet_protocol *) inet_protos[hash]->next;
 		return(0);
 	}
 
 	p = (struct inet_protocol *) inet_protos[hash];
-	while(p != NULL) 
+	while(p != NULL)
 	{
 		/*
 		 * We have to worry if the protocol being deleted is
 		 * the last one on the list, then we may need to reset
 		 * someone's copied bit.
 		 */
-		if (p->next != NULL && p->next == prot) 
+		if (p->next != NULL && p->next == prot)
 		{
 			/*
 			 * if we are the last one with this protocol and
 			 * there is a previous one, reset its copy bit.
 			 */
-			if (p->copy == 0 && lp != NULL) 
+			if (p->copy == 0 && lp != NULL)
 				lp->copy = 0;
 			p->next = prot->next;
 			return(0);
 		}
-		if (p->next != NULL && p->next->protocol == prot->protocol) 
+		if (p->next != NULL && p->next->protocol == prot->protocol)
 			lp = p;
 
 		p = (struct inet_protocol *) p->next;

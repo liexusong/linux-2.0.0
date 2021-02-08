@@ -15,17 +15,17 @@
 struct firewall_ops
 {
 	struct firewall_ops *next;
-	int (*fw_forward)(struct firewall_ops *this, int pf, 
+	int (*fw_forward)(struct firewall_ops *this, int pf,
 			struct device *dev, void *phdr, void *arg);
-	int (*fw_input)(struct firewall_ops *this, int pf, 
+	int (*fw_input)(struct firewall_ops *this, int pf,
 			struct device *dev, void *phdr, void *arg);
-	int (*fw_output)(struct firewall_ops *this, int pf, 
+	int (*fw_output)(struct firewall_ops *this, int pf,
 			struct device *dev, void *phdr, void *arg);
 	/* Data falling in the second 486 cache line isn't used directly
 	   during a firewall call and scan, only by insert/delete and other
 	   unusual cases
 	 */
-	int fw_pf;		/* Protocol family 			*/	
+	int fw_pf;			/* Protocol family 			*/
 	int fw_priority;	/* Priority of chosen firewalls 	*/
 };
 

@@ -12,14 +12,14 @@
  *		Mark Evans, <evansmp@uhura.aston.ac.uk>
  *		Florian  La Roche, <rzsfl@rz.uni-sb.de>
  *		Alan Cox, <gw4pts@gw4pts.ampr.org>
- * 
+ *
  * Fixes:
  *		Mr Linux	: Arp problems
  *		Alan Cox	: Generic queue tidyup (very tiny here)
  *		Alan Cox	: eth_header ntohs should be htons
  *		Alan Cox	: eth_rebuild_header missing an htons and
  *				  minor other things.
- *		Tegge		: Arp bug fixes. 
+ *		Tegge		: Arp bug fixes.
  *		Florian		: Removed many unnecessary functions, code cleanup
  *				  and changes for new arp and skbuff.
  *		Alan Cox	: Redid header building to reflect new format.
@@ -61,9 +61,9 @@ void eth_setup(char *str, int *ints)
 
 	if (!str || !*str)
 		return;
-	while (d) 
+	while (d)
 	{
-		if (!strcmp(str,d->name)) 
+		if (!strcmp(str,d->name))
 		{
 			if (ints[0] > 0)
 				d->irq=ints[1];
@@ -81,52 +81,50 @@ void eth_setup(char *str, int *ints)
 
 
 /*
- *	 Create the Ethernet MAC header for an arbitrary protocol layer 
+ *	 Create the Ethernet MAC header for an arbitrary protocol layer
  *
  *	saddr=NULL	means use device source address
  *	daddr=NULL	means leave destination address (eg unresolved arp)
  */
 
-int eth_header(struct sk_buff *skb, struct device *dev, unsigned short type,
-	   void *daddr, void *saddr, unsigned len)
+int eth_header(struct sk_buff *skb, struct device *dev,
+			   unsigned short type, void *daddr, void *saddr, unsigned len)
 {
-	struct ethhdr *eth = (struct ethhdr *)skb_push(skb,ETH_HLEN);
+	struct ethhdr *eth = (struct ethhdr *)skb_push(skb, ETH_HLEN);
 
-	/* 
+	/*
 	 *	Set the protocol type. For a packet of type ETH_P_802_3 we put the length
 	 *	in here instead. It is up to the 802.2 layer to carry protocol information.
 	 */
-	
-	if(type!=ETH_P_802_3) 
+
+	if (type != ETH_P_802_3)
 		eth->h_proto = htons(type);
 	else
 		eth->h_proto = htons(len);
 
 	/*
-	 *	Set the source hardware address. 
+	 *	Set the source hardware address.
 	 */
-	 
-	if(saddr)
-		memcpy(eth->h_source,saddr,dev->addr_len);
+
+	if (saddr)
+		memcpy(eth->h_source, saddr, dev->addr_len);
 	else
-		memcpy(eth->h_source,dev->dev_addr,dev->addr_len);
+		memcpy(eth->h_source, dev->dev_addr, dev->addr_len);
 
 	/*
-	 *	Anyway, the loopback-device should never use this function... 
+	 *	Anyway, the loopback-device should never use this function...
 	 */
 
-	if (dev->flags & IFF_LOOPBACK) 
-	{
+	if (dev->flags & IFF_LOOPBACK) {
 		memset(eth->h_dest, 0, dev->addr_len);
-		return(dev->hard_header_len);
-	}
-	
-	if(daddr)
-	{
-		memcpy(eth->h_dest,daddr,dev->addr_len);
 		return dev->hard_header_len;
 	}
-	
+
+	if (daddr) {
+		memcpy(eth->h_dest, daddr, dev->addr_len);
+		return dev->hard_header_len;
+	}
+
 	return -dev->hard_header_len;
 }
 
@@ -136,18 +134,17 @@ int eth_header(struct sk_buff *skb, struct device *dev, unsigned short type,
  *	(or in future other address resolution) has completed on this
  *	sk_buff. We now let ARP fill in the other fields.
  */
- 
-int eth_rebuild_header(void *buff, struct device *dev, unsigned long dst,
-			struct sk_buff *skb)
+
+int eth_rebuild_header(void *buff, struct device *dev,
+					   unsigned long dst, struct sk_buff *skb)
 {
 	struct ethhdr *eth = (struct ethhdr *)buff;
 
 	/*
 	 *	Only ARP/IP is currently supported
 	 */
-	 
-	if(eth->h_proto != htons(ETH_P_IP)) 
-	{
+
+	if (eth->h_proto != htons(ETH_P_IP)) {
 		printk(KERN_DEBUG "%s: unable to resolve type %X addresses.\n",dev->name,(int)eth->h_proto);
 		memcpy(eth->h_source, dev->dev_addr, dev->addr_len);
 		return 0;
@@ -156,53 +153,52 @@ int eth_rebuild_header(void *buff, struct device *dev, unsigned long dst,
 	/*
 	 *	Try to get ARP to resolve the header.
 	 */
-#ifdef CONFIG_INET	 
-	return arp_find(eth->h_dest, dst, dev, dev->pa_addr, skb)? 1 : 0;
+#ifdef CONFIG_INET
+	return arp_find(eth->h_dest, dst, dev, dev->pa_addr, skb) ? 1 : 0;
 #else
-	return 0;	
-#endif	
+	return 0;
+#endif
 }
 
 
 /*
- *	Determine the packet's protocol ID. The rule here is that we 
+ *	Determine the packet's protocol ID. The rule here is that we
  *	assume 802.3 if the type field is short enough to be a length.
  *	This is normal practice and works for any 'now in use' protocol.
  */
- 
+
 unsigned short eth_type_trans(struct sk_buff *skb, struct device *dev)
 {
 	struct ethhdr *eth;
 	unsigned char *rawp;
-	
-	skb->mac.raw=skb->data;
-	skb_pull(skb,dev->hard_header_len);
-	eth= skb->mac.ethernet;
-	
-	if(*eth->h_dest&1)
-	{
-		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
-			skb->pkt_type=PACKET_BROADCAST;
+
+	skb->mac.raw = skb->data;
+	skb_pull(skb, dev->hard_header_len); // 把 data 指针移动 hard_header_len
+	eth = skb->mac.ethernet;
+
+	if (*eth->h_dest & 1) {
+		if (memcmp(eth->h_dest,dev->broadcast, ETH_ALEN) == 0)
+			skb->pkt_type = PACKET_BROADCAST;
 		else
-			skb->pkt_type=PACKET_MULTICAST;
+			skb->pkt_type = PACKET_MULTICAST;
 	}
-	
+
 	/*
 	 *	This ALLMULTI check should be redundant by 1.4
 	 *	so don't forget to remove it.
 	 */
-	 
-	else if(dev->flags&(IFF_PROMISC|IFF_ALLMULTI))
+
+	else if (dev->flags&(IFF_PROMISC|IFF_ALLMULTI))
 	{
-		if(memcmp(eth->h_dest,dev->dev_addr, ETH_ALEN))
-			skb->pkt_type=PACKET_OTHERHOST;
+		if (memcmp(eth->h_dest, dev->dev_addr, ETH_ALEN))
+			skb->pkt_type = PACKET_OTHERHOST;
 	}
-	
+
 	if (ntohs(eth->h_proto) >= 1536)
 		return eth->h_proto;
-		
+
 	rawp = skb->data;
-	
+
 	/*
 	 *	This is a magic hack to spot IPX packets. Older Novell breaks
 	 *	the protocol design and runs IPX over 802.3 without an 802.2 LLC
@@ -211,7 +207,7 @@ unsigned short eth_type_trans(struct sk_buff *skb, struct device *dev)
 	 */
 	if (*(unsigned short *)rawp == 0xFFFF)
 		return htons(ETH_P_802_3);
-		
+
 	/*
 	 *	Real 802.2 LLC
 	 */
@@ -225,19 +221,19 @@ unsigned short eth_type_trans(struct sk_buff *skb, struct device *dev)
  */
 
 void eth_header_cache_bind(struct hh_cache ** hhp, struct device *dev,
-			   unsigned short htype, __u32 daddr)
+						   unsigned short htype, __u32 daddr)
 {
 	struct hh_cache *hh;
 
-	if (htype != ETH_P_IP)
-	{
+	if (htype != ETH_P_IP) {
 		printk(KERN_DEBUG "eth_header_cache_bind: %04x cache is not implemented\n", htype);
 		return;
 	}
+
 	if (arp_bind_cache(hhp, dev, htype, daddr))
 		return;
-	if ((hh=*hhp) != NULL)
-	{
+
+	if ((hh=*hhp) != NULL) {
 		memcpy(hh->hh_data+6, dev->dev_addr, ETH_ALEN);
 		hh->hh_data[12] = htype>>8;
 		hh->hh_data[13] = htype&0xFF;
@@ -250,8 +246,7 @@ void eth_header_cache_bind(struct hh_cache ** hhp, struct device *dev,
 
 void eth_header_cache_update(struct hh_cache *hh, struct device *dev, unsigned char * haddr)
 {
-	if (hh->hh_type != ETH_P_IP)
-	{
+	if (hh->hh_type != ETH_P_IP) {
 		printk(KERN_DEBUG "eth_header_cache_update: %04x cache is not implemented\n", hh->hh_type);
 		return;
 	}
@@ -262,7 +257,7 @@ void eth_header_cache_update(struct hh_cache *hh, struct device *dev, unsigned c
 /*
  *	Copy from an ethernet device memory space to an sk_buff while checksumming if IP
  */
- 
+
 void eth_copy_and_sum(struct sk_buff *dest, unsigned char *src, int length, int base)
 {
 #ifdef CONFIG_IP_ROUTER
@@ -296,5 +291,5 @@ void eth_copy_and_sum(struct sk_buff *dest, unsigned char *src, int length, int 
 
 	dest->csum=csum_partial_copy(src+sizeof(struct iphdr)+ETH_HLEN,dest->data+sizeof(struct iphdr)+ETH_HLEN,length,base);
 	dest->ip_summed=1;
-#endif	
+#endif
 }

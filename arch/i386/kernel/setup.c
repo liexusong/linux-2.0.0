@@ -75,13 +75,13 @@ extern int rd_image_start;	/* starting block # of image */
 extern int root_mountflags;
 extern int _etext, _edata, _end;
 
-extern char empty_zero_page[PAGE_SIZE];
+extern char empty_zero_page[PAGE_SIZE]; // 零页...
 
 /*
  * This is set up by the setup-routine at boot-time
  */
-#define PARAM	empty_zero_page
-#define EXT_MEM_K (*(unsigned short *) (PARAM+2))
+#define PARAM      empty_zero_page
+#define EXT_MEM_K  (*(unsigned short *) (PARAM+2))
 #ifdef CONFIG_APM
 #define APM_BIOS_INFO (*(struct apm_bios_info *) (PARAM+64))
 #endif
@@ -103,10 +103,10 @@ extern char empty_zero_page[PAGE_SIZE];
 #define RAMDISK_LOAD_FLAG		0x4000
 
 static char command_line[COMMAND_LINE_SIZE] = { 0, };
-       char saved_command_line[COMMAND_LINE_SIZE];
+char saved_command_line[COMMAND_LINE_SIZE];
 
 void setup_arch(char **cmdline_p,
-	unsigned long * memory_start_p, unsigned long * memory_end_p)
+    unsigned long *memory_start_p, unsigned long *memory_end_p)
 {
 	unsigned long memory_start, memory_end;
 	char c = ' ', *to = command_line, *from = COMMAND_LINE;
@@ -126,7 +126,7 @@ void setup_arch(char **cmdline_p,
 	apm_bios_info = APM_BIOS_INFO;
 #endif
 	aux_device_present = AUX_DEVICE_INFO;
-	memory_end = (1<<20) + (EXT_MEM_K<<10); // 物理内存的真实大小
+	memory_end = (1<<20) + (EXT_MEM_K<<10); // 物理内存的真实大小(1MB+扩展内存)
 	memory_end &= PAGE_MASK;                // 内存页对齐
 #ifdef CONFIG_BLK_DEV_RAM
 	rd_image_start = RAMDISK_FLAGS & RAMDISK_IMAGE_START_MASK;
@@ -139,11 +139,13 @@ void setup_arch(char **cmdline_p,
 #endif
 	if (!MOUNT_ROOT_RDONLY)
 		root_mountflags &= ~MS_RDONLY;
-	memory_start = (unsigned long) &_end; // 从内核影像开始
-	init_task.mm->start_code = TASK_SIZE;
-	init_task.mm->end_code = TASK_SIZE + (unsigned long) &_etext;
-	init_task.mm->end_data = TASK_SIZE + (unsigned long) &_edata;
-	init_task.mm->brk = TASK_SIZE + (unsigned long) &_end;
+
+	memory_start = (unsigned long)&_end; // 从内核影像开始
+    // 设置init进程的内存映射
+	init_task.mm->start_code = TASK_SIZE; // 3GB...
+	init_task.mm->end_code   = TASK_SIZE + (unsigned long)&_etext;
+	init_task.mm->end_data   = TASK_SIZE + (unsigned long)&_edata;
+	init_task.mm->brk        = TASK_SIZE + (unsigned long)&_end; // 堆的开始地址
 
 	/* Save unparsed command line copy for /proc/cmdline */
 	memcpy(saved_command_line, COMMAND_LINE, COMMAND_LINE_SIZE);
@@ -179,9 +181,10 @@ void setup_arch(char **cmdline_p,
 		*(to++) = c;
 	}
 	*to = '\0';
-	*cmdline_p = command_line;
+
+	*cmdline_p      = command_line;
 	*memory_start_p = memory_start;
-	*memory_end_p = memory_end;
+	*memory_end_p   = memory_end;
 
 #ifdef CONFIG_BLK_DEV_INITRD
 	if (LOADER_TYPE) {

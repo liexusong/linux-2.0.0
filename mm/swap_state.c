@@ -74,10 +74,10 @@ unsigned long init_swap_cache(unsigned long mem_start,
 {
 	unsigned long swap_cache_size;
 
-	mem_start = (mem_start + 15) & ~15;
+	mem_start  = (mem_start + 15) & ~15; // 16字节对齐
 	swap_cache = (unsigned long *) mem_start;
-	swap_cache_size = MAP_NR(mem_end); // MAP_NR: 计算mem_end有多少个内存页
-	memset(swap_cache, 0, swap_cache_size * sizeof (unsigned long));
+	swap_cache_size = MAP_NR(mem_end); // 计算有多少个物理内存页
+	memset(swap_cache, 0, swap_cache_size * sizeof (unsigned long)); // 每个物理内存页需要一个long来管理
 	return (unsigned long) (swap_cache + swap_cache_size);
 }
 

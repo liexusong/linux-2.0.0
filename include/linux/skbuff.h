@@ -10,7 +10,7 @@
  *	as published by the Free Software Foundation; either version
  *	2 of the License, or (at your option) any later version.
  */
- 
+
 #ifndef _LINUX_SKBUFF_H
 #define _LINUX_SKBUFF_H
 
@@ -33,7 +33,7 @@
 #define CHECKSUM_HW 1
 #define CHECKSUM_UNNECESSARY 2
 
-struct sk_buff_head 
+struct sk_buff_head
 {
 	struct sk_buff	* next;
 	struct sk_buff	* prev;
@@ -45,73 +45,74 @@ struct sk_buff_head
 };
 
 
-struct sk_buff 
+struct sk_buff
 {
-	struct sk_buff	* next;			/* Next buffer in list 				*/
-	struct sk_buff	* prev;			/* Previous buffer in list 			*/
-	struct sk_buff_head * list;		/* List we are on				*/
+	struct sk_buff *next;			/* Next buffer in list 				*/
+	struct sk_buff *prev;			/* Previous buffer in list 			*/
+	struct sk_buff_head *list;		/* List we are on					*/
 #if CONFIG_SKB_CHECK
-	int		magic_debug_cookie;
+	int magic_debug_cookie;
 #endif
-	struct sk_buff	*link3;			/* Link for IP protocol level buffer chains 	*/
-	struct sock	*sk;			/* Socket we are owned by 			*/
-	unsigned long	when;			/* used to compute rtt's			*/
-	struct timeval	stamp;			/* Time we arrived				*/
-	struct device	*dev;			/* Device we arrived on/are leaving by		*/
-	union 
+	struct sk_buff *link3;			/* Link for IP protocol level buffer chains*/
+	struct sock *sk;				/* Socket we are owned by 			*/
+	unsigned long when;				/* used to compute rtt's			*/
+	struct timeval stamp;			/* Time we arrived					*/
+	struct device *dev;				/* Device we arrived on/are leaving by*/
+
+	union
 	{
-		struct tcphdr	*th;
-		struct ethhdr	*eth;
-		struct iphdr	*iph;
-		struct udphdr	*uh;
+		struct tcphdr	*th;     // TCP header
+		struct ethhdr	*eth;    // ETH header
+		struct iphdr	*iph;    // IP header
+		struct udphdr	*uh;     // UDP header
 		unsigned char	*raw;
 		/* for passing file handles in a unix domain socket */
 		void *filp;
 	} h;
-  
-	union 
-	{	
+
+	union
+	{
 		/* As yet incomplete physical layer views */
 	  	unsigned char 	*raw;
 	  	struct ethhdr	*ethernet;
 	} mac;
-  
-	struct iphdr	*ip_hdr;		/* For IPPROTO_RAW 				*/
-	unsigned long 	len;			/* Length of actual data			*/
-	unsigned long	csum;			/* Checksum 					*/
-	__u32		saddr;			/* IP source address				*/
-	__u32		daddr;			/* IP target address				*/
-	__u32		raddr;			/* IP next hop address				*/
-	__u32		seq;			/* TCP sequence number				*/
-	__u32		end_seq;		/* seq [+ fin] [+ syn] + datalen		*/
-	__u32		ack_seq;		/* TCP ack sequence number			*/
-	unsigned char	proto_priv[16];	        /* Protocol private data			*/
-	volatile char 	acked,			/* Are we acked ?				*/
-			used,			/* Are we in use ?				*/
-			free,			/* How to free this buffer			*/
-			arp;			/* Has IP/ARP resolution finished		*/
-	unsigned char	tries,			/* Times tried					*/
-  			lock,			/* Are we locked ?				*/
-  			localroute,		/* Local routing asserted for this frame	*/
-  			pkt_type,		/* Packet class					*/
-  			pkt_bridged,		/* Tracker for bridging 			*/
-  			ip_summed;		/* Driver fed us an IP checksum			*/
-#define PACKET_HOST		0		/* To us					*/
-#define PACKET_BROADCAST	1		/* To all					*/
-#define PACKET_MULTICAST	2		/* To group					*/
-#define PACKET_OTHERHOST	3		/* To someone else 				*/
-	unsigned short	users;			/* User count - see datagram.c,tcp.c 		*/
-	unsigned short	protocol;		/* Packet protocol from driver. 		*/
-	unsigned short	truesize;		/* Buffer size 					*/
 
-	atomic_t	count;			/* reference count				*/
-	struct sk_buff	*data_skb;		/* Link to the actual data skb			*/
-	unsigned char	*head;			/* Head of buffer 				*/
+	struct iphdr	*ip_hdr;		/* For IPPROTO_RAW 					*/
+	unsigned long 	len;			/* Length of actual data			*/
+	unsigned long	csum;			/* Checksum 						*/
+	__u32			saddr;			/* IP source address				*/ // 源IP地址
+	__u32			daddr;			/* IP target address				*/ // 目标IP地址
+	__u32			raddr;			/* IP next hop address				*/ // 吓一跳IP地址
+	__u32			seq;			/* TCP sequence number				*/
+	__u32			end_seq;		/* seq [+ fin] [+ syn] + datalen	*/
+	__u32			ack_seq;		/* TCP ack sequence number			*/
+	unsigned char	proto_priv[16];	/* Protocol private data	*/
+	volatile char 	acked,			/* Are we acked ?					*/
+					used,			/* Are we in use ?					*/
+					free,			/* How to free this buffer			*/
+					arp;			/* Has IP/ARP resolution finished	*/ // 是否已经解析到mac地址
+	unsigned char	tries,			/* Times tried						*/
+					lock,			/* Are we locked ?					*/
+					localroute,		/* Local routing asserted for this frame*/
+					pkt_type,		/* Packet class						*/
+					pkt_bridged,	/* Tracker for bridging 			*/
+					ip_summed;		/* Driver fed us an IP checksum		*/
+#define PACKET_HOST			0		/* To us							*/
+#define PACKET_BROADCAST	1		/* To all							*/
+#define PACKET_MULTICAST	2		/* To group							*/
+#define PACKET_OTHERHOST	3		/* To someone else 					*/
+	unsigned short	users;			/* User count - see datagram.c,tcp.c*/
+	unsigned short	protocol;		/* Packet protocol from driver. 	*/
+	unsigned short	truesize;		/* Buffer size 						*/
+
+	atomic_t		count;			/* reference count					*/
+	struct sk_buff	*data_skb;		/* Link to the actual data skb		*/
+	unsigned char	*head;			/* Head of buffer 					*/
 	unsigned char	*data;			/* Data head pointer				*/
-	unsigned char	*tail;			/* Tail pointer					*/
-	unsigned char 	*end;			/* End pointer					*/
-	void 		(*destructor)(struct sk_buff *);	/* Destruct function		*/
-	__u16		redirport;		/* Redirect port				*/
+	unsigned char	*tail;			/* Tail pointer						*/
+	unsigned char 	*end;			/* End pointer						*/
+	void 			(*destructor)(struct sk_buff *);/* Destruct function*/
+	__u16			redirport;		/* Redirect port					*/
 };
 
 #ifdef CONFIG_SKB_LARGE
@@ -139,31 +140,31 @@ struct sk_buff
 #if 0
 extern void			print_skb(struct sk_buff *);
 #endif
-extern void			kfree_skb(struct sk_buff *skb, int rw);
-extern void			skb_queue_head_init(struct sk_buff_head *list);
-extern void			skb_queue_head(struct sk_buff_head *list,struct sk_buff *buf);
-extern void			skb_queue_tail(struct sk_buff_head *list,struct sk_buff *buf);
-extern struct sk_buff *		skb_dequeue(struct sk_buff_head *list);
+extern void				kfree_skb(struct sk_buff *skb, int rw);
+extern void				skb_queue_head_init(struct sk_buff_head *list);
+extern void				skb_queue_head(struct sk_buff_head *list,struct sk_buff *buf);
+extern void				skb_queue_tail(struct sk_buff_head *list,struct sk_buff *buf);
+extern struct sk_buff	*skb_dequeue(struct sk_buff_head *list);
 extern void 			skb_insert(struct sk_buff *old,struct sk_buff *newsk);
-extern void			skb_append(struct sk_buff *old,struct sk_buff *newsk);
-extern void			skb_unlink(struct sk_buff *buf);
+extern void				skb_append(struct sk_buff *old,struct sk_buff *newsk);
+extern void				skb_unlink(struct sk_buff *buf);
 extern __u32			skb_queue_len(struct sk_buff_head *list);
-extern struct sk_buff *		skb_peek_copy(struct sk_buff_head *list);
-extern struct sk_buff *		alloc_skb(unsigned int size, int priority);
-extern struct sk_buff *		dev_alloc_skb(unsigned int size);
-extern void			kfree_skbmem(struct sk_buff *skb);
-extern struct sk_buff *		skb_clone(struct sk_buff *skb, int priority);
-extern struct sk_buff *		skb_copy(struct sk_buff *skb, int priority);
-extern void			skb_device_lock(struct sk_buff *skb);
-extern void			skb_device_unlock(struct sk_buff *skb);
-extern void			dev_kfree_skb(struct sk_buff *skb, int mode);
-extern int			skb_device_locked(struct sk_buff *skb);
-extern unsigned char *		skb_put(struct sk_buff *skb, int len);
-extern unsigned char *		skb_push(struct sk_buff *skb, int len);
-extern unsigned char *		skb_pull(struct sk_buff *skb, int len);
-extern int			skb_headroom(struct sk_buff *skb);
-extern int			skb_tailroom(struct sk_buff *skb);
-extern void			skb_reserve(struct sk_buff *skb, int len);
+extern struct sk_buff	*skb_peek_copy(struct sk_buff_head *list);
+extern struct sk_buff 	*alloc_skb(unsigned int size, int priority);
+extern struct sk_buff 	*dev_alloc_skb(unsigned int size);
+extern void				kfree_skbmem(struct sk_buff *skb);
+extern struct sk_buff 	*skb_clone(struct sk_buff *skb, int priority);
+extern struct sk_buff 	*skb_copy(struct sk_buff *skb, int priority);
+extern void				skb_device_lock(struct sk_buff *skb);
+extern void				skb_device_unlock(struct sk_buff *skb);
+extern void				dev_kfree_skb(struct sk_buff *skb, int mode);
+extern int				skb_device_locked(struct sk_buff *skb);
+extern unsigned char 	*skb_put(struct sk_buff *skb, int len);
+extern unsigned char 	*skb_push(struct sk_buff *skb, int len);
+extern unsigned char 	*skb_pull(struct sk_buff *skb, int len);
+extern int				skb_headroom(struct sk_buff *skb);
+extern int				skb_tailroom(struct sk_buff *skb);
+extern void				skb_reserve(struct sk_buff *skb, int len);
 extern void 			skb_trim(struct sk_buff *skb, int len);
 
 extern __inline__ int skb_queue_empty(struct sk_buff_head *list)
@@ -188,19 +189,19 @@ extern __inline__ struct sk_buff *skb_peek(struct sk_buff_head *list_)
 /*
  *	Return the length of an sk_buff queue
  */
- 
+
 extern __inline__ __u32 skb_queue_len(struct sk_buff_head *list_)
 {
 	return(list_->qlen);
 }
 
 #if CONFIG_SKB_CHECK
-extern int 			skb_check(struct sk_buff *skb,int,int, char *);
-#define IS_SKB(skb)		skb_check((skb), 0, __LINE__,__FILE__)
+extern int skb_check(struct sk_buff *skb,int,int, char *);
+#define IS_SKB(skb)			skb_check((skb), 0, __LINE__,__FILE__)
 #define IS_SKB_HEAD(skb)	skb_check((skb), 1, __LINE__,__FILE__)
 #else
-#define IS_SKB(skb)		
-#define IS_SKB_HEAD(skb)	
+#define IS_SKB(skb)
+#define IS_SKB_HEAD(skb)
 
 extern __inline__ void skb_queue_head_init(struct sk_buff_head *list)
 {
@@ -234,8 +235,8 @@ extern __inline__ void skb_queue_head(struct sk_buff_head *list, struct sk_buff 
 {
 	unsigned long flags;
 
-	save_flags(flags);
-	cli();
+	save_flags(flags);	// 保存eflags寄存器
+	cli();				// 关闭中断
 	__skb_queue_head(list, newsk);
 	restore_flags(flags);
 }
@@ -386,7 +387,7 @@ extern __inline__ void skb_unlink(struct sk_buff *skb)
 /*
  *	Add data to an sk_buff
  */
- 
+
 extern __inline__ unsigned char *skb_put(struct sk_buff *skb, int len)
 {
 	unsigned char *tmp=skb->tail;
@@ -425,36 +426,35 @@ extern __inline__ unsigned char * skb_pull(struct sk_buff *skb, int len)
 
 extern __inline__ int skb_headroom(struct sk_buff *skb)
 {
-	return skb->data-skb->head;
+	return skb->data - skb->head;
 }
 
 extern __inline__ int skb_tailroom(struct sk_buff *skb)
 {
-	return skb->end-skb->tail;
+	return skb->end - skb->tail;
 }
 
 extern __inline__ void skb_reserve(struct sk_buff *skb, int len)
 {
-	skb->data+=len;
-	skb->tail+=len;
+	skb->data += len;
+	skb->tail += len;
 }
 
 extern __inline__ void skb_trim(struct sk_buff *skb, int len)
 {
-	if(skb->len>len)
-	{
-		skb->len=len;
-		skb->tail=skb->data+len;
+	if (skb->len > len) {
+		skb->len = len;
+		skb->tail = skb->data + len;
 	}
 }
 
 #endif
 
-extern struct sk_buff *		skb_recv_datagram(struct sock *sk,unsigned flags,int noblock, int *err);
-extern int			datagram_select(struct sock *sk, int sel_type, select_table *wait);
-extern void			skb_copy_datagram(struct sk_buff *from, int offset, char *to,int size);
-extern void			skb_copy_datagram_iovec(struct sk_buff *from, int offset, struct iovec *to,int size);
-extern void			skb_free_datagram(struct sock * sk, struct sk_buff *skb);
+extern struct sk_buff	*skb_recv_datagram(struct sock *sk,unsigned flags,int noblock, int *err);
+extern int				datagram_select(struct sock *sk, int sel_type, select_table *wait);
+extern void				skb_copy_datagram(struct sk_buff *from, int offset, char *to,int size);
+extern void				skb_copy_datagram_iovec(struct sk_buff *from, int offset, struct iovec *to,int size);
+extern void				skb_free_datagram(struct sock * sk, struct sk_buff *skb);
 
 #endif	/* __KERNEL__ */
 #endif	/* _LINUX_SKBUFF_H */

@@ -21,7 +21,7 @@
  *	Fixes:
  *		Alan Cox	:	Missing nonblock feature in ip_build_xmit.
  *		Mike Kilburn	:	htons() missing in ip_build_xmit.
- *		Bradford Johnson:	Fix faulty handling of some frames when 
+ *		Bradford Johnson:	Fix faulty handling of some frames when
  *					no route is found.
  *		Alexander Demenshin:	Missing sk/skb free in ip_queue_xmit
  *					(in case if packet not accepted by
@@ -68,44 +68,45 @@
 /*
  *	Loop a packet back to the sender.
  */
- 
+// 发送一个复制的skb数据包到回环设备
 static void ip_loopback(struct device *old_dev, struct sk_buff *skb)
 {
-	struct device *dev=&loopback_dev;
-	int len=ntohs(skb->ip_hdr->tot_len);
-	struct sk_buff *newskb=dev_alloc_skb(len+dev->hard_header_len+15);
-	
-	if(newskb==NULL)
+	struct device *dev = &loopback_dev;
+	int len = ntohs(skb->ip_hdr->tot_len);
+	struct sk_buff *newskb = dev_alloc_skb(len+dev->hard_header_len + 15);
+
+	if (newskb == NULL)
 		return;
-		
-	newskb->link3=NULL;
-	newskb->sk=NULL;
-	newskb->dev=dev;
-	newskb->saddr=skb->saddr;
-	newskb->daddr=skb->daddr;
-	newskb->raddr=skb->raddr;
-	newskb->free=1;
-	newskb->lock=0;
-	newskb->users=0;
-	newskb->pkt_type=skb->pkt_type;
-	
+
+	newskb->link3 = NULL;
+	newskb->sk = NULL;
+	newskb->dev = dev;
+	newskb->saddr = skb->saddr;
+	newskb->daddr = skb->daddr;
+	newskb->raddr = skb->raddr;
+	newskb->free = 1;
+	newskb->lock = 0;
+	newskb->users = 0;
+	newskb->pkt_type = skb->pkt_type;
+
 	/*
 	 *	Put a MAC header on the packet
 	 */
-	ip_send(NULL,newskb, skb->ip_hdr->daddr, len, dev, skb->ip_hdr->saddr);
+	ip_send(NULL, newskb, skb->ip_hdr->daddr, len, dev, skb->ip_hdr->saddr);
+
 	/*
-	 *	Add the rest of the data space.	
+	 *	Add the rest of the data space.
 	 */
-	newskb->ip_hdr=(struct iphdr *)skb_put(newskb, len);
+	newskb->ip_hdr = (struct iphdr *)skb_put(newskb, len);
 	memcpy(newskb->proto_priv, skb->proto_priv, sizeof(skb->proto_priv));
 
 	/*
 	 *	Copy the data
 	 */
-	memcpy(newskb->ip_hdr,skb->ip_hdr,len);
+	memcpy(newskb->ip_hdr, skb->ip_hdr, len);
 
 	/* Recurse. The device check against IFF_LOOPBACK will stop infinite recursion */
-		
+
 	/*printk("Loopback output queued [%lX to %lX].\n", newskb->ip_hdr->saddr,newskb->ip_hdr->daddr);*/
 	ip_queue_xmit(NULL, dev, newskb, 2);
 }
@@ -115,74 +116,79 @@ static void ip_loopback(struct device *old_dev, struct sk_buff *skb)
 /*
  *	Take an skb, and fill in the MAC header.
  */
-
-int ip_send(struct rtable * rt, struct sk_buff *skb, __u32 daddr, int len, struct device *dev, __u32 saddr)
+// 构建mac头部
+int ip_send(struct rtable *rt, struct sk_buff *skb, __u32 daddr,
+			int len, struct device *dev, __u32 saddr)
 {
 	int mac = 0;
 
 	skb->dev = dev;
 	skb->arp = 1;
 	skb->protocol = htons(ETH_P_IP);
-	if (dev->hard_header)
-	{
+
+	if (dev->hard_header) {
 		/*
 		 *	Build a hardware header. Source address is our mac, destination unknown
 		 *  	(rebuild header will sort this out)
 		 */
-		skb_reserve(skb,(dev->hard_header_len+15)&~15);	/* 16 byte aligned IP headers are good */
-		if (rt && dev == rt->rt_dev && rt->rt_hh)
-		{
-			memcpy(skb_push(skb,dev->hard_header_len),rt->rt_hh->hh_data,dev->hard_header_len);
+		skb_reserve(skb, (dev->hard_header_len + 15) & ~15);	/* 16 byte aligned IP headers are good */
+
+		if (rt && dev == rt->rt_dev && rt->rt_hh) {
+			memcpy(skb_push(skb, dev->hard_header_len),
+				   rt->rt_hh->hh_data, dev->hard_header_len);
+
 			if (rt->rt_hh->hh_uptodate)
 				return dev->hard_header_len;
-#if RT_CACHE_DEBUG >= 2
-			printk("ip_send: hh miss %08x via %08x\n", daddr, rt->rt_gateway);
-#endif
+
 			skb->arp = 0;
 			skb->raddr = daddr;
+
 			return dev->hard_header_len;
 		}
+
+		// 一般对应 eth_hard_header() 函数
 		mac = dev->hard_header(skb, dev, ETH_P_IP, NULL, NULL, len);
-		if (mac < 0)
-		{
+		if (mac < 0) { // 如果小于0, 需要使用ARP协议来查找mac地址
 			mac = -mac;
 			skb->arp = 0;
 			skb->raddr = daddr;	/* next routing address */
 		}
 	}
+
 	return mac;
 }
 
-static int ip_send_room(struct rtable * rt, struct sk_buff *skb, __u32 daddr, int len, struct device *dev, __u32 saddr)
+static int ip_send_room(struct rtable *rt, struct sk_buff *skb, __u32 daddr,
+						int len, struct device *dev, __u32 saddr)
 {
 	int mac = 0;
 
 	skb->dev = dev;
 	skb->arp = 1;
 	skb->protocol = htons(ETH_P_IP);
-	skb_reserve(skb,MAX_HEADER);
-	if (dev->hard_header)
-	{
-		if (rt && dev == rt->rt_dev && rt->rt_hh)
-		{
-			memcpy(skb_push(skb,dev->hard_header_len),rt->rt_hh->hh_data,dev->hard_header_len);
+	skb_reserve(skb, MAX_HEADER);
+
+	if (dev->hard_header) {
+		if (rt && dev == rt->rt_dev && rt->rt_hh) {
+			memcpy(skb_push(skb, dev->hard_header_len),
+							rt->rt_hh->hh_data, dev->hard_header_len);
+
 			if (rt->rt_hh->hh_uptodate)
 				return dev->hard_header_len;
-#if RT_CACHE_DEBUG >= 2
-			printk("ip_send_room: hh miss %08x via %08x\n", daddr, rt->rt_gateway);
-#endif
+
 			skb->arp = 0;
 			skb->raddr = daddr;
 			return dev->hard_header_len;
 		}
+
 		mac = dev->hard_header(skb, dev, ETH_P_IP, NULL, NULL, len);
-		if (mac < 0)
-		{
+		if (mac < 0) {
 			mac = -mac;
 			skb->arp = 0;
 			skb->raddr = daddr;	/* next routing address */
 		}
 	}
+
 	return mac;
 }
 
@@ -195,8 +201,8 @@ int ip_id_count = 0;
  * routing/ARP tables to select a device struct.
  */
 int ip_build_header(struct sk_buff *skb, __u32 saddr, __u32 daddr,
-		struct device **dev, int type, struct options *opt,
-		int len, int tos, int ttl, struct rtable ** rp)
+					struct device **dev, int type, struct options *opt,
+					int len, int tos, int ttl, struct rtable **rp)
 {
 	struct rtable *rt;
 	__u32 raddr;
@@ -212,32 +218,28 @@ int ip_build_header(struct sk_buff *skb, __u32 saddr, __u32 daddr,
 	 *	See if we need to look up the device.
 	 */
 
-#ifdef CONFIG_IP_MULTICAST	
-	if(MULTICAST(daddr) && *dev==NULL && skb->sk && *skb->sk->ip_mc_name)
-		*dev=dev_get(skb->sk->ip_mc_name);
+#ifdef CONFIG_IP_MULTICAST
+	if (MULTICAST(daddr) && *dev == NULL && skb->sk && *skb->sk->ip_mc_name)
+		*dev = dev_get(skb->sk->ip_mc_name);
 #endif
-	if (rp)
-	{
-		rt = ip_check_route(rp, daddr, skb->localroute);
+
+	if (rp) {
+		rt = ip_check_route(rp, daddr, skb->localroute); // 校正路由表项
 		/*
 		 * If rp != NULL rt_put following below should not
 		 * release route, so that...
 		 */
 		if (rt)
 			atomic_inc(&rt->rt_refcnt);
-	}
-	else
+	} else
 		rt = ip_rt_route(daddr, skb->localroute);
 
 
-	if (*dev == NULL)
-	{
-		if (rt == NULL)
-		{
+	if (*dev == NULL) {
+		if (rt == NULL) {
 			ip_statistics.IpOutNoRoutes++;
 			return(-ENETUNREACH);
 		}
-
 		*dev = rt->rt_dev;
 	}
 
@@ -246,8 +248,7 @@ int ip_build_header(struct sk_buff *skb, __u32 saddr, __u32 daddr,
 
 	raddr = rt ? rt->rt_gateway : daddr;
 
-	if (opt && opt->is_strictroute && rt && (rt->rt_flags & RTF_GATEWAY))
-	{
+	if (opt && opt->is_strictroute && rt && (rt->rt_flags & RTF_GATEWAY)) {
 		ip_rt_put(rt);
 		ip_statistics.IpOutNoRoutes++;
 		return -ENETUNREACH;
@@ -256,8 +257,7 @@ int ip_build_header(struct sk_buff *skb, __u32 saddr, __u32 daddr,
 	/*
 	 *	Now build the MAC header.
 	 */
-
-	if (type==IPPROTO_TCP)
+	if (type == IPPROTO_TCP)
 		tmp = ip_send_room(rt, skb, raddr, len, *dev, saddr);
 	else
 		tmp = ip_send(rt, skb, raddr, len, *dev, saddr);
@@ -270,7 +270,7 @@ int ip_build_header(struct sk_buff *skb, __u32 saddr, __u32 daddr,
 
 	skb->dev = *dev;
 	skb->saddr = saddr;
-	
+
 	/*
 	 *	Now build the IP header.
 	 */
@@ -280,33 +280,36 @@ int ip_build_header(struct sk_buff *skb, __u32 saddr, __u32 daddr,
 	 *	one is being supplied to us by the user
 	 */
 
-	if(type == IPPROTO_RAW)
+	if (type == IPPROTO_RAW)
 		return (tmp);
 
 	/*
 	 *	Build the IP addresses
 	 */
-	 
-	if (opt)
-		iph=(struct iphdr *)skb_put(skb,sizeof(struct iphdr) + opt->optlen);
-	else
-		iph=(struct iphdr *)skb_put(skb,sizeof(struct iphdr));
 
-	iph->version  = 4;
-	iph->ihl      = 5;
-	iph->tos      = tos;
+	if (opt)
+		iph = (struct iphdr *)skb_put(skb, sizeof(struct iphdr) + opt->optlen);
+	else
+		iph = (struct iphdr *)skb_put(skb, sizeof(struct iphdr));
+
+	iph->version = 4;
+	iph->ihl = 5;
+	iph->tos = tos;
 	iph->frag_off = 0;
-	iph->ttl      = ttl;
-	iph->daddr    = daddr;
-	iph->saddr    = saddr;
+	iph->ttl = ttl;
+	iph->daddr = daddr;
+	iph->saddr = saddr;
 	iph->protocol = type;
-	skb->ip_hdr   = iph;
+	skb->ip_hdr = iph;
 
 	if (!opt || !opt->optlen)
 		return sizeof(struct iphdr) + tmp;
-	iph->ihl += opt->optlen>>2;
+
+	iph->ihl += opt->optlen >> 2;
+
 	ip_options_build(skb, opt, final_daddr, (*dev)->pa_addr, 0);
-	return iph->ihl*4 + tmp;
+
+	return iph->ihl * 4 + tmp;
 }
 
 
@@ -320,14 +323,14 @@ void ip_send_check(struct iphdr *iph)
 	iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
 }
 
-
 /*
  *	If a sender wishes the packet to remain unfreed
  *	we add it to his send queue. This arguably belongs
  *	in the TCP level since nobody else uses it. BUT
  *	remember IPng might change all the rules.
  */
-static inline void add_to_send_queue(struct sock * sk, struct sk_buff * skb)
+// 把skb添加到重发队列中
+static inline void add_to_send_queue(struct sock *sk, struct sk_buff *skb)
 {
 	unsigned long flags;
 
@@ -338,22 +341,20 @@ static inline void add_to_send_queue(struct sock * sk, struct sk_buff * skb)
 	save_flags(flags);
 	cli();
 
-	if (skb->link3 != NULL)
-	{
+	if (skb->link3 != NULL) {
 		NETDEBUG(printk("ip.c: link3 != NULL\n"));
 		skb->link3 = NULL;
 	}
-	if (sk->send_head == NULL)
-	{
+
+	if (sk->send_head == NULL) {
 		sk->send_tail = skb;
 		sk->send_head = skb;
 		sk->send_next = skb;
-	}
-	else
-	{
+	} else {
 		sk->send_tail->link3 = skb;
 		sk->send_tail = skb;
 	}
+
 	restore_flags(flags);
 }
 
@@ -366,9 +367,9 @@ static inline void add_to_send_queue(struct sock * sk, struct sk_buff * skb)
  * This routine also needs to put in the total length,
  * and compute the checksum
  */
-
-void ip_queue_xmit(struct sock *sk, struct device *dev,
-	      struct sk_buff *skb, int free)
+// 发送数据包（已经构建好所有的头部），一般TCP协议使用
+void
+ip_queue_xmit(struct sock *sk, struct device *dev, struct sk_buff *skb, int free)
 {
 	unsigned int tot_len;
 	struct iphdr *iph;
@@ -391,20 +392,20 @@ void ip_queue_xmit(struct sock *sk, struct device *dev,
 	 *	header length problem
 	 */
 
-	iph = skb->ip_hdr;
+	iph = skb->ip_hdr; // IP头部
 	tot_len = skb->len - (((unsigned char *)iph) - skb->data);
 	iph->tot_len = htons(tot_len);
 
 	switch (free) {
-		/* No reassigning numbers to fragments... */
-		default:
-			free = 1;
-			break;
-		case 0:
-			add_to_send_queue(sk, skb);
-			/* fall through */
-		case 1:
-			iph->id = htons(ip_id_count++);
+	/* No reassigning numbers to fragments... */
+	default:
+		free = 1;
+		break;
+	case 0:
+		add_to_send_queue(sk, skb);
+		/* fall through */
+	case 1:
+		iph->id = htons(ip_id_count++);
 	}
 
 	skb->free = free;
@@ -416,7 +417,7 @@ void ip_queue_xmit(struct sock *sk, struct device *dev,
 #ifdef CONFIG_FIREWALL
 	if (call_out_firewall(PF_INET, skb->dev, iph, NULL) < FW_ACCEPT)
 		goto out;
-#endif	
+#endif
 
 	/*
 	 *	Do we need to fragment. Again this is inefficient.
@@ -424,21 +425,19 @@ void ip_queue_xmit(struct sock *sk, struct device *dev,
 	 *	bits of it.
 	 */
 
-	if (tot_len > dev->mtu)
+	if (tot_len > dev->mtu) // 如果数据包的长度大于最大传输单元, 那么需要分片
 		goto fragment;
 
 	/*
 	 *	Add an IP checksum
 	 */
-
-	ip_send_check(iph);
+	ip_send_check(iph); // 添加校验和
 
 	/*
 	 *	More debugging. You cannot queue a packet already on a list
 	 *	Spot this and moan loudly.
 	 */
-	if (skb->next != NULL)
-	{
+	if (skb->next != NULL) {
 		NETDEBUG(printk("ip_queue_xmit: next != NULL\n"));
 		skb_unlink(skb);
 	}
@@ -446,52 +445,47 @@ void ip_queue_xmit(struct sock *sk, struct device *dev,
 	/*
 	 *	If the indicated interface is up and running, send the packet.
 	 */
-	 
+
 	ip_statistics.IpOutRequests++;
 #ifdef CONFIG_IP_ACCT
 	ip_fw_chk(iph,dev,NULL,ip_acct_chain,0,IP_FW_MODE_ACCT_OUT);
-#endif	
+#endif
 
-#ifdef CONFIG_IP_MULTICAST	
+#ifdef CONFIG_IP_MULTICAST
 
 	/*
 	 *	Multicasts are looped back for other local users
 	 */
-	 
-	if (MULTICAST(iph->daddr) && !(dev->flags&IFF_LOOPBACK))
-	{
-		if(sk==NULL || sk->ip_mc_loop)
-		{
-			if(iph->daddr==IGMP_ALL_HOSTS || (dev->flags&IFF_ALLMULTI))
-			{
+
+	if (MULTICAST(iph->daddr) && !(dev->flags & IFF_LOOPBACK)) {
+		if (sk == NULL || sk->ip_mc_loop) {
+			if(iph->daddr == IGMP_ALL_HOSTS || (dev->flags & IFF_ALLMULTI)) {
 				ip_loopback(dev,skb);
-			}
-			else
-			{
-				struct ip_mc_list *imc=dev->ip_mc_list;
-				while(imc!=NULL)
-				{
-					if(imc->multiaddr==iph->daddr)
-					{
+			} else {
+				struct ip_mc_list *imc = dev->ip_mc_list;
+
+				while (imc != NULL) {
+					if(imc->multiaddr == iph->daddr) {
 						ip_loopback(dev,skb);
 						break;
 					}
-					imc=imc->next;
+					imc = imc->next;
 				}
 			}
 		}
+
 		/* Multicasts with ttl 0 must not go beyond the host */
-		
-		if (iph->ttl==0)
+		if (iph->ttl == 0)
 			goto out;
 	}
+
 #endif
-	if ((dev->flags & IFF_BROADCAST) && !(dev->flags & IFF_LOOPBACK)
-	    && (iph->daddr==dev->pa_brdaddr || iph->daddr==0xFFFFFFFF))
-		ip_loopback(dev,skb);
-		
-	if (dev->flags & IFF_UP)
-	{
+	if ((dev->flags & IFF_BROADCAST)
+		&& !(dev->flags & IFF_LOOPBACK)
+	    && (iph->daddr == dev->pa_brdaddr || iph->daddr == 0xFFFFFFFF))
+		ip_loopback(dev, skb);
+
+	if (dev->flags & IFF_UP) {
 		/*
 		 *	If we have an owner use its priority setting,
 		 *	otherwise use NORMAL
@@ -500,12 +494,15 @@ void ip_queue_xmit(struct sock *sk, struct device *dev,
 		if (sk)
 			priority = sk->priority;
 
-		dev_queue_xmit(skb, dev, priority);
+		dev_queue_xmit(skb, dev, priority); // 通过硬件把包发送出去
 		return;
 	}
-	if(sk)
+
+	if (sk)
 		sk->err = ENETDOWN;
+
 	ip_statistics.IpOutDiscards++;
+
 out:
 	if (free)
 		kfree_skb(skb, FREE_WRITE);
@@ -516,7 +513,7 @@ no_device:
 	goto out;
 
 fragment:
-	ip_fragment(sk,skb,dev,0);
+	ip_fragment(sk, skb, dev, 0); // 分片发送
 	goto out;
 }
 
@@ -535,26 +532,23 @@ fragment:
  *	last feature will measurable improve the Linux fragment handler.
  *
  *	The callback has five args, an arbitrary pointer (copy of frag),
- *	the source IP address (may depend on the routing table), the 
+ *	the source IP address (may depend on the routing table), the
  *	destination address (char *), the offset to copy from, and the
  *	length to be copied.
- * 
+ *
  */
-
-int ip_build_xmit(struct sock *sk,
-		   void getfrag (const void *,
-				 __u32,
-				 char *,
-				 unsigned int,	
-				 unsigned int),
-		   const void *frag,
-		   unsigned short int length,
-		   __u32 daddr,
-		   __u32 user_saddr,
-		   struct options * opt,
-		   int flags,
-		   int type,
-		   int noblock) 
+// 把数据包发送出去（需要本函数构建头部），一般是UDP、RAW和ICMP协议使用
+int ip_build_xmit(
+	struct sock *sk,
+	void (*getfrag)(const void *, __u32, char *, unsigned int, unsigned int), // 复制数据和计算传输层checksum
+	const void *frag,            // 数据地址
+	unsigned short int length,   // 数据长度
+	__u32 daddr,                 // 目标IP地址
+	__u32 user_saddr,            // 源IP地址
+	struct options *opt,         // IP选项
+	int flags,
+	int type,
+	int noblock)
 {
 	struct rtable *rt;
 	unsigned int fraglen, maxfraglen, fragheaderlen;
@@ -570,53 +564,57 @@ int ip_build_xmit(struct sock *sk,
 
 	if (opt && opt->srr && !sk->ip_hdrincl)
 	  daddr = opt->faddr;
-	
+
 	ip_statistics.IpOutRequests++;
 
-#ifdef CONFIG_IP_MULTICAST	
-	if(MULTICAST(daddr) && *sk->ip_mc_name)
-	{
-		dev=dev_get(sk->ip_mc_name);
-		if(!dev)
+#ifdef CONFIG_IP_MULTICAST
+	if (MULTICAST(daddr) && *sk->ip_mc_name) {
+		dev = dev_get(sk->ip_mc_name);
+		if (!dev)
 			return -ENODEV;
-		rt=NULL;
+
+		rt = NULL;
 		if (sk->saddr && (!LOOPBACK(sk->saddr) || LOOPBACK(daddr)))
 			saddr = sk->saddr;
 		else
 			saddr = dev->pa_addr;
-	}
-	else
-	{
-#endif	
+	} else {
+#endif
+		// 根据目标IP地址daddr获取路由表项
 		rt = ip_check_route(&sk->ip_route_cache, daddr,
-				    sk->localroute || (flags&MSG_DONTROUTE) ||
-				    (opt && opt->is_strictroute));
-		if (rt == NULL) 
-		{
+							sk->localroute
+							|| (flags & MSG_DONTROUTE)
+							|| (opt && opt->is_strictroute));
+		if (rt == NULL) {
 			ip_statistics.IpOutNoRoutes++;
 			return(-ENETUNREACH);
 		}
-		saddr = rt->rt_src;
 
+		saddr = rt->rt_src; // 源IP地址
 		hh = rt->rt_hh;
-	
+
 		if (sk->saddr && (!LOOPBACK(sk->saddr) || LOOPBACK(daddr)))
 			saddr = sk->saddr;
-			
-		dev=rt->rt_dev;
+
+		dev = rt->rt_dev;
+
 #ifdef CONFIG_IP_MULTICAST
 	}
+
 	if (rt && !dev)
 		dev = rt->rt_dev;
-#endif		
+
+#endif
+
 	if (user_saddr)
 		saddr = user_saddr;
 
-	raddr = rt ? rt->rt_gateway : daddr;
+	raddr = rt ? rt->rt_gateway : daddr; // 下一跳IP地址
+
 	/*
 	 *	Now compute the buffer space we require
-	 */ 
-	 
+	 */
+
 	/*
 	 *	Try the simple case first. This leaves broadcast, multicast, fragmented frames, and by
 	 *	choice RAW frames within 20 bytes of maximum size(rare) to the long path
@@ -624,166 +622,187 @@ int ip_build_xmit(struct sock *sk,
 
 	if (!sk->ip_hdrincl) {
 		length += sizeof(struct iphdr);
-		if(opt) length += opt->optlen;
+		if (opt)
+			length += opt->optlen;
 	}
 
-	if(length <= dev->mtu && !MULTICAST(daddr) && daddr!=0xFFFFFFFF && daddr!=dev->pa_brdaddr)
-	{	
+	if (length <= dev->mtu            // 1. 数据包长度小于最大传输单元
+		&& !MULTICAST(daddr)          // 2. 目标IP地址不是一个广播地址
+		&& daddr != 0xFFFFFFFF
+		&& daddr != dev->pa_brdaddr)
+	{
 		int error;
-		struct sk_buff *skb=sock_alloc_send_skb(sk, length+15+dev->hard_header_len,0, noblock, &error);
-		if(skb==NULL)
-		{
+		struct sk_buff *skb =
+				sock_alloc_send_skb(sk, length + 15 + dev->hard_header_len,
+									0, noblock, &error);
+		if (skb == NULL) {
 			ip_statistics.IpOutDiscards++;
 			return error;
 		}
-		skb->dev=dev;
+
+		skb->dev = dev;
 		skb->protocol = htons(ETH_P_IP);
-		skb->free=1;
-		skb->when=jiffies;
-		skb->sk=sk;
-		skb->arp=0;
-		skb->saddr=saddr;
+		skb->free = 1;
+		skb->when = jiffies;
+		skb->sk = sk;
+		skb->arp = 0;
+		skb->saddr = saddr;
 		skb->raddr = raddr;
-		skb_reserve(skb,(dev->hard_header_len+15)&~15);
-		if (hh)
-		{
-			skb->arp=1;
-			memcpy(skb_push(skb,dev->hard_header_len),hh->hh_data,dev->hard_header_len);
-			if (!hh->hh_uptodate)
-			{
+
+		skb_reserve(skb, (dev->hard_header_len + 15) & ~15); // 保留mac头部空间
+
+		// 1. 构建mac头部
+		if (hh) {
+			skb->arp = 1;
+
+			memcpy(skb_push(skb, dev->hard_header_len),
+				   hh->hh_data, dev->hard_header_len);
+
+			if (!hh->hh_uptodate) {
 				skb->arp = 0;
-#if RT_CACHE_DEBUG >= 2
-				printk("ip_build_xmit: hh miss %08x via %08x\n", rt->rt_dst, rt->rt_gateway);
-#endif				
 			}
-		}
-		else if(dev->hard_header)
-		{
-			if(dev->hard_header(skb,dev,ETH_P_IP,NULL,NULL,0)>0)
-				skb->arp=1;
+
+		} else if (dev->hard_header) {
+			if (dev->hard_header(skb, dev, ETH_P_IP, NULL, NULL, 0) > 0)
+				skb->arp = 1;
 		}
 		else
-			skb->arp=1;
-		skb->ip_hdr=iph=(struct iphdr *)skb_put(skb,length);
+			skb->arp = 1;
+
+		// 2. 构建IP头部
+		skb->ip_hdr = iph = (struct iphdr *)skb_put(skb, length);
+
 		dev_lock_list();
-		if(!sk->ip_hdrincl)
-		{
-			iph->version=4;
-			iph->ihl=5;
-			iph->tos=sk->ip_tos;
+
+		if (!sk->ip_hdrincl) {
+			iph->version = 4;
+			iph->ihl = 5;
+			iph->tos = sk->ip_tos;
 			iph->tot_len = htons(length);
-			iph->id=htons(ip_id_count++);
+			iph->id = htons(ip_id_count++);
 			iph->frag_off = 0;
-			iph->ttl=sk->ip_ttl;
-			iph->protocol=type;
-			iph->saddr=saddr;
-			iph->daddr=daddr;
-			if (opt) 
-			{
+			iph->ttl = sk->ip_ttl;
+			iph->protocol = type;
+			iph->saddr = saddr;
+			iph->daddr = daddr;
+
+			if (opt) {
 				iph->ihl += opt->optlen>>2;
-				ip_options_build(skb, opt,
-						 true_daddr, dev->pa_addr, 0);
+				ip_options_build(skb, opt, true_daddr, dev->pa_addr, 0);
 			}
-			iph->check=0;
+
+			iph->check = 0;
 			iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
-			getfrag(frag,saddr,((char *)iph)+iph->ihl*4,0, length-iph->ihl*4);
+
+			// 复制数据和计算传输层checksum
+
+			getfrag(frag,                      // 参数1: 由调用方提供的上下文参数(一般用于提供数据源的开始地址)
+					saddr,                     // 参数2: 源IP地址
+					((char *)iph)+iph->ihl*4,  // 参数3: 数据存放的地址
+					0,                         // 参数4: 复制数据开始的偏移量
+					length-iph->ihl*4);        // 参数5: 复制数据的长度
 		}
 		else
-			getfrag(frag,saddr,(void *)iph,0,length);
+			getfrag(frag, saddr, (void *)iph, 0, length);
+
 		dev_unlock_list();
+
 #ifdef CONFIG_FIREWALL
-		if(call_out_firewall(PF_INET, skb->dev, iph, NULL)< FW_ACCEPT)
-		{
+		if (call_out_firewall(PF_INET, skb->dev, iph, NULL) < FW_ACCEPT) {
 			kfree_skb(skb, FREE_WRITE);
 			return -EPERM;
 		}
 #endif
+
 #ifdef CONFIG_IP_ACCT
-		ip_fw_chk(iph,dev,NULL,ip_acct_chain,0,IP_FW_MODE_ACCT_OUT);
-#endif		
-		if(dev->flags&IFF_UP)
-			dev_queue_xmit(skb,dev,sk->priority);
-		else
-		{
+		ip_fw_chk(iph, dev, NULL, ip_acct_chain ,0, IP_FW_MODE_ACCT_OUT);
+#endif
+
+		if (dev->flags & IFF_UP)
+			dev_queue_xmit(skb, dev, sk->priority); // 把数据包通过设备发送出去
+		else {
 			ip_statistics.IpOutDiscards++;
 			kfree_skb(skb, FREE_WRITE);
 		}
+
 		return 0;
 	}
+
+	// 下面处理分片的情况
+
 	if (!sk->ip_hdrincl)
 		length -= sizeof(struct iphdr);
-		
-	if(opt) 
-	{
+
+	if (opt) {
 		length -= opt->optlen;
-		fragheaderlen = dev->hard_header_len + sizeof(struct iphdr) + opt->optlen;
-		maxfraglen = ((dev->mtu-sizeof(struct iphdr)-opt->optlen) & ~7) + fragheaderlen;
-	}
-	else 
-	{
+		// 头部长度
+		fragheaderlen = dev->hard_header_len
+						+ sizeof(struct iphdr)
+						+ opt->optlen;
+
+		// 帧最大长度
+		maxfraglen = ((dev->mtu - sizeof(struct iphdr) - opt->optlen) & ~7)
+						+ fragheaderlen;
+
+	} else {
 		fragheaderlen = dev->hard_header_len;
-		if(!sk->ip_hdrincl)
+		if (!sk->ip_hdrincl)
 			fragheaderlen += 20;
-		
+
 		/*
 		 *	Fragheaderlen is the size of 'overhead' on each buffer. Now work
 		 *	out the size of the frames to send.
 		 */
-	 
-		maxfraglen = ((dev->mtu-20) & ~7) + fragheaderlen;
-        }
-	
+
+		maxfraglen = ((dev->mtu - 20) & ~7) + fragheaderlen;
+	}
+
 	/*
 	 *	Start at the end of the frame by handling the remainder.
 	 */
-	 
-	offset = length - (length % (maxfraglen - fragheaderlen));
-	
+	// maxfraglen - fragheaderlen 等于帧能存储负载数据的长度
+	offset = length - (length % (maxfraglen - fragheaderlen)); // 不足一个帧的数据偏移量
+
 	/*
 	 *	Amount of memory to allocate for final fragment.
 	 */
-	 
-	fraglen = length - offset + fragheaderlen;
-	
-	if(length-offset==0)
-	{
+
+	fraglen = length - offset + fragheaderlen; // 第一个包的长度
+
+	if (length - offset == 0) { // 如果length刚好等于包能容纳的大小的倍数, 即: (length == n*(maxfraglen-fragheaderlen))
 		fraglen = maxfraglen;
-		offset -= maxfraglen-fragheaderlen;
+		offset -= maxfraglen - fragheaderlen; // 修证偏移量
 	}
-	
-	
+
+
 	/*
 	 *	The last fragment will not have MF (more fragments) set.
 	 */
-	 
 	mf = 0;
 
 	/*
-	 *	Can't fragment raw packets 
+	 *	Can't fragment raw packets
 	 */
-	 
+
 	if (sk->ip_hdrincl && offset > 0)
  		return(-EMSGSIZE);
 
 	/*
 	 *	Lock the device lists.
 	 */
-
 	dev_lock_list();
-	
+
 	/*
 	 *	Get an identifier
 	 */
-	 
 	id = htons(ip_id_count++);
 
 	/*
 	 *	Being outputting the bytes.
 	 */
-	 
-	do 
-	{
-		struct sk_buff * skb;
+
+	do {
+		struct sk_buff *skb;
 		int error;
 		char *data;
 
@@ -791,20 +810,19 @@ int ip_build_xmit(struct sock *sk,
 		 *	Get the memory we require with some space left for alignment.
 		 */
 
-		skb = sock_alloc_send_skb(sk, fraglen+15, 0, noblock, &error);
-		if (skb == NULL)
-		{
+		skb = sock_alloc_send_skb(sk, fraglen + 15, 0, noblock, &error);
+		if (skb == NULL) {
 			ip_statistics.IpOutDiscards++;
-			if(nfrags>1)
-				ip_statistics.IpFragCreates++;			
+			if (nfrags > 1)
+				ip_statistics.IpFragCreates++;
 			dev_unlock_list();
 			return(error);
 		}
-		
+
 		/*
 		 *	Fill in the control structures
 		 */
-		 
+
 		skb->dev = dev;
 		skb->protocol = htons(ETH_P_IP);
 		skb->when = jiffies;
@@ -814,8 +832,11 @@ int ip_build_xmit(struct sock *sk,
 		skb->saddr = saddr;
 		skb->daddr = daddr;
 		skb->raddr = raddr;
-		skb_reserve(skb,(dev->hard_header_len+15)&~15);
-		data = skb_put(skb, fraglen-dev->hard_header_len);
+
+		// 先保留MAC头部空间
+		skb_reserve(skb, (dev->hard_header_len+15) & ~15);
+
+		data = skb_put(skb, fraglen - dev->hard_header_len);
 
 		/*
 		 *	Save us ARP and stuff. In the optimal case we do no route lookup (route cache ok)
@@ -823,93 +844,94 @@ int ip_build_xmit(struct sock *sk,
 		 *	this can be fixed later. For gateway routes we ought to have a rt->.. header cache
 		 *	pointer to speed header cache builds for identical targets.
 		 */
-		 
-		if (hh)
-		{
-			skb->arp=1;
-			memcpy(skb_push(skb,dev->hard_header_len),hh->hh_data,dev->hard_header_len);
-			if (!hh->hh_uptodate)
-			{
+		// 构建mac头部
+		if (hh) {
+			skb->arp = 1;
+			memcpy(skb_push(skb, dev->hard_header_len),
+				   hh->hh_data,dev->hard_header_len);
+
+			if (!hh->hh_uptodate) {
 				skb->arp = 0;
-#if RT_CACHE_DEBUG >= 2
-				printk("ip_build_xmit: hh miss %08x via %08x\n", rt->rt_dst, rt->rt_gateway);
-#endif				
 			}
+
+		} else if (dev->hard_header) {
+			if (dev->hard_header(skb, dev, ETH_P_IP, NULL, NULL, 0) > 0)
+				skb->arp = 1;
 		}
-		else if (dev->hard_header)
-		{
-			if(dev->hard_header(skb, dev, ETH_P_IP, 
-						NULL, NULL, 0)>0)
-				skb->arp=1;
-		}
-		
+
 		/*
 		 *	Find where to start putting bytes.
 		 */
-		 
+
 		skb->ip_hdr = iph = (struct iphdr *)data;
 
 		/*
-		 *	Only write IP header onto non-raw packets 
+		 *	Only write IP header onto non-raw packets
 		 */
-		 
-		if(!sk->ip_hdrincl) 
-		{
-
+		// 构建IP头部
+		if (!sk->ip_hdrincl) {
 			iph->version = 4;
 			iph->ihl = 5; /* ugh */
+
 			if (opt) {
 				iph->ihl += opt->optlen>>2;
-				ip_options_build(skb, opt,
-						 true_daddr, dev->pa_addr, offset);
+				ip_options_build(skb, opt, true_daddr, dev->pa_addr, offset);
 			}
+
 			iph->tos = sk->ip_tos;
 			iph->tot_len = htons(fraglen - fragheaderlen + iph->ihl*4);
 			iph->id = id;
-			iph->frag_off = htons(offset>>3);
+			iph->frag_off = htons(offset >> 3);
 			iph->frag_off |= mf;
+
 #ifdef CONFIG_IP_MULTICAST
 			if (MULTICAST(daddr))
 				iph->ttl = sk->ip_mc_ttl;
 			else
 #endif
 				iph->ttl = sk->ip_ttl;
+
 			iph->protocol = type;
 			iph->check = 0;
 			iph->saddr = saddr;
 			iph->daddr = daddr;
 			iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
 			data += iph->ihl*4;
-			
+
 			/*
 			 *	Any further fragments will have MF set.
 			 */
-			 
+
 			mf = htons(IP_MF);
 		}
-		
+
 		/*
 		 *	User data callback
 		 */
+		// 复制传输层数据
+		getfrag(frag, saddr, data, offset, fraglen - fragheaderlen);
 
-		getfrag(frag, saddr, data, offset, fraglen-fragheaderlen);
-		
 		/*
 		 *	Account for the fragment.
 		 */
-		 
+
 #ifdef CONFIG_FIREWALL
-		if(!offset && call_out_firewall(PF_INET, skb->dev, iph, NULL) < FW_ACCEPT)
+
+		if (!offset
+			&& call_out_firewall(PF_INET, skb->dev, iph, NULL) < FW_ACCEPT)
 		{
 			kfree_skb(skb, FREE_WRITE);
 			dev_unlock_list();
 			return -EPERM;
 		}
-#endif		
+
+#endif
 #ifdef CONFIG_IP_ACCT
 		if(!offset)
 			ip_fw_chk(iph, dev, NULL, ip_acct_chain, 0, IP_FW_MODE_ACCT_OUT);
-#endif	
+#endif
+
+		// 这里要修证偏移量和数据包的大小
 		offset -= (maxfraglen-fragheaderlen);
 		fraglen = maxfraglen;
 
@@ -918,31 +940,27 @@ int ip_build_xmit(struct sock *sk,
 		/*
 		 *	Multicasts are looped back for other local users
 		 */
-	 
-		if (MULTICAST(daddr) && !(dev->flags&IFF_LOOPBACK)) 
-		{
+
+		if (MULTICAST(daddr) && !(dev->flags&IFF_LOOPBACK)) {
 			/*
 			 *	Loop back any frames. The check for IGMP_ALL_HOSTS is because
 			 *	you are always magically a member of this group.
 			 *
 			 *	Always loop back all host messages when running as a multicast router.
 			 */
-			 
-			if(sk==NULL || sk->ip_mc_loop)
-			{
-				if(daddr==IGMP_ALL_HOSTS || (dev->flags&IFF_ALLMULTI))
+
+			if (sk == NULL || sk->ip_mc_loop) {
+				if (daddr == IGMP_ALL_HOSTS || (dev->flags&IFF_ALLMULTI))
 					ip_loopback(dev,skb);
-				else 
-				{
+				else {
 					struct ip_mc_list *imc=dev->ip_mc_list;
-					while(imc!=NULL) 
-					{
-						if(imc->multiaddr==daddr) 
-						{
+
+					while (imc != NULL) {
+						if (imc->multiaddr == daddr) {
 							ip_loopback(dev,skb);
 							break;
 						}
-						imc=imc->next;
+						imc = imc->next;
 					}
 				}
 			}
@@ -952,68 +970,63 @@ int ip_build_xmit(struct sock *sk,
 			 *	extra clone.
 			 */
 
-			if(skb->ip_hdr->ttl==0)
-			{
+			if (skb->ip_hdr->ttl == 0) {
 				kfree_skb(skb, FREE_WRITE);
 				nfrags++;
 				continue;
 			}
 		}
+
 #endif
 
 		nfrags++;
-		
+
 		/*
 		 *	BSD loops broadcasts
 		 */
-		 
-		if((dev->flags&IFF_BROADCAST) && (daddr==0xFFFFFFFF || daddr==dev->pa_brdaddr) && !(dev->flags&IFF_LOOPBACK))
+		if ((dev->flags & IFF_BROADCAST)
+			&& (daddr == 0xFFFFFFFF || daddr == dev->pa_brdaddr)
+			&& !(dev->flags & IFF_LOOPBACK))
 			ip_loopback(dev,skb);
 
 		/*
 		 *	Now queue the bytes into the device.
 		 */
-		 
-		if (dev->flags & IFF_UP) 
-		{
-			dev_queue_xmit(skb, dev, sk->priority);
-		} 
-		else 
-		{
-			/*
-			 *	Whoops... 
-			 */
-			 
+		if (dev->flags & IFF_UP) {                  // 如果设备处于打开状态的话
+			dev_queue_xmit(skb, dev, sk->priority); // 把数据通过设备发送出去
+		} else {
 			ip_statistics.IpOutDiscards++;
-			if(nfrags>1)
-				ip_statistics.IpFragCreates+=nfrags;
+			if (nfrags > 1)
+				ip_statistics.IpFragCreates += nfrags;
+
 			kfree_skb(skb, FREE_WRITE);
 			dev_unlock_list();
+
 			/*
 			 *	BSD behaviour.
 			 */
-			if(sk!=NULL)
-				sk->err=ENETDOWN;
+			if (sk != NULL)
+				sk->err = ENETDOWN;
 			return(0); /* lose rest of fragments */
 		}
-	} 
-	while (offset >= 0);
-	if(nfrags>1)
-		ip_statistics.IpFragCreates+=nfrags;
+	} while (offset >= 0);
+
+	if (nfrags > 1)
+		ip_statistics.IpFragCreates += nfrags;
+
 	dev_unlock_list();
 	return(0);
 }
-    
+
 
 /*
  *	IP protocol layer initialiser
  */
 
-static struct packet_type ip_packet_type =
-{
-	0,	/* MUTTER ntohs(ETH_P_IP),*/
+static struct packet_type ip_packet_type = {
+	0,		/* MUTTER ntohs(ETH_P_IP),*/
 	NULL,	/* All devices */
-	ip_rcv,
+	ip_rcv, /* func */
 	NULL,
 	NULL,
 };
@@ -1023,62 +1036,71 @@ static struct packet_type ip_packet_type =
 /*
  *	Netlink hooks for IP
  */
- 
-void ip_netlink_msg(unsigned long msg, __u32 daddr, __u32 gw, __u32 mask, short flags, short metric, char *name)
+
+void ip_netlink_msg(unsigned long msg, __u32 daddr, __u32 gw,
+					__u32 mask, short flags, short metric, char *name)
 {
 	struct sk_buff *skb=alloc_skb(sizeof(struct netlink_rtinfo), GFP_ATOMIC);
 	struct netlink_rtinfo *nrt;
 	struct sockaddr_in *s;
-	if(skb==NULL)
+
+	if (skb == NULL)
 		return;
-	skb->free=1;
-	nrt=(struct netlink_rtinfo *)skb_put(skb, sizeof(struct netlink_rtinfo));
-	nrt->rtmsg_type=msg;
-	s=(struct sockaddr_in *)&nrt->rtmsg_dst;
-	s->sin_family=AF_INET;
-	s->sin_addr.s_addr=daddr;
-	s=(struct sockaddr_in *)&nrt->rtmsg_gateway;
-	s->sin_family=AF_INET;
-	s->sin_addr.s_addr=gw;
-	s=(struct sockaddr_in *)&nrt->rtmsg_genmask;
-	s->sin_family=AF_INET;
-	s->sin_addr.s_addr=mask;
-	nrt->rtmsg_flags=flags;
-	nrt->rtmsg_metric=metric;
+
+	skb->free = 1;
+
+	nrt = (struct netlink_rtinfo *)skb_put(skb, sizeof(struct netlink_rtinfo));
+	nrt->rtmsg_type = msg;
+
+	s = (struct sockaddr_in *)&nrt->rtmsg_dst;
+	s->sin_family = AF_INET;
+	s->sin_addr.s_addr = daddr;
+
+	s = (struct sockaddr_in *)&nrt->rtmsg_gateway;
+	s->sin_family = AF_INET;
+	s->sin_addr.s_addr = gw;
+
+	s = (struct sockaddr_in *)&nrt->rtmsg_genmask;
+	s->sin_family = AF_INET;
+	s->sin_addr.s_addr = mask;
+	nrt->rtmsg_flags = flags;
+	nrt->rtmsg_metric = metric;
+
 	strcpy(nrt->rtmsg_device,name);
+
 	if (netlink_post(NETLINK_ROUTE, skb))
 		kfree_skb(skb, FREE_WRITE);
-}	
+}
 
 #endif
 
 /*
  *	Device notifier
  */
- 
+
 static int ip_rt_event(struct notifier_block *this, unsigned long event, void *ptr)
 {
-	struct device *dev=ptr;
-	if(event==NETDEV_DOWN)
-	{
+	struct device *dev = ptr;
+
+	if (event == NETDEV_DOWN) {
 		ip_netlink_msg(RTMSG_DELDEVICE, 0,0,0,0,0,dev->name);
 		ip_rt_flush(dev);
 	}
 /*
  *	Join the initial group if multicast.
- */		
-	if(event==NETDEV_UP)
-	{
-#ifdef CONFIG_IP_MULTICAST	
+ */
+	if (event == NETDEV_UP) {
+#ifdef CONFIG_IP_MULTICAST
 		ip_mc_allhost(dev);
-#endif		
+#endif
 		ip_netlink_msg(RTMSG_NEWDEVICE, 0,0,0,0,0,dev->name);
 		ip_rt_update(NETDEV_UP, dev);
 	}
+
 	return NOTIFY_DONE;
 }
 
-struct notifier_block ip_rt_notifier={
+struct notifier_block ip_rt_notifier = {
 	ip_rt_event,
 	NULL,
 	0
@@ -1090,10 +1112,10 @@ struct notifier_block ip_rt_notifier={
 
 void ip_init(void)
 {
-	ip_packet_type.type=htons(ETH_P_IP);
+	ip_packet_type.type = htons(ETH_P_IP);
 	dev_add_pack(&ip_packet_type);
 
-	/* So we flush routes when a device is downed */	
+	/* So we flush routes when a device is downed */
 	register_netdevice_notifier(&ip_rt_notifier);
 
 /*	ip_raw_init();
@@ -1109,7 +1131,6 @@ void ip_init(void)
 		0, &proc_net_inode_operations,
 		ip_mc_procinfo
 	});
-#endif	
+#endif
 #endif
 }
-

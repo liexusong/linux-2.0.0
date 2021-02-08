@@ -15,13 +15,13 @@
 	Modifications/additions by Bjorn Ekwall <bj0rn@blox.se>:
 		ethdev_index[MAX_ETH_CARDS]
 		register_netdev() / unregister_netdev()
-		
+
 	Modifications by Wolfgang Walter
 		Use dev_close cleanly so we always shut things down tidily.
-		
+
 	Changed 29/10/95, Alan Cox to pass sockaddr's around for mac addresses.
-	
-	14/06/96 - Paul Gortmaker:	Add generic eth_change_mtu() function. 
+
+	14/06/96 - Paul Gortmaker:	Add generic eth_change_mtu() function.
 */
 
 #include <linux/config.h>
@@ -51,7 +51,7 @@
 
    Given that almost all of these functions are handled in the current
    socket-based scheme, putting ethercard devices in /dev/ seems pointless.
-   
+
    [Removed all support for /dev network devices. When someone adds
     streams then by magic we get them, but otherwise they are un-needed
 	and a space waste]
@@ -88,7 +88,7 @@ init_etherdev(struct device *dev, int sizeof_priv)
 		for (i = 0; i < MAX_ETH_CARDS; ++i)
 			if (ethdev_index[i] == NULL) {
 				sprintf(pname, "eth%d", i);
-				for (cur_dev = dev_base; cur_dev; cur_dev = cur_dev->next)
+				for (cur_dev = dev_base; cur_dev; cur_dev = cur_dev->next) {
 					if (strcmp(pname, cur_dev->name) == 0) {
 						dev = cur_dev;
 						dev->init = NULL;
@@ -96,9 +96,11 @@ init_etherdev(struct device *dev, int sizeof_priv)
 						dev->priv = sizeof_priv
 							  ? kmalloc(sizeof_priv, GFP_KERNEL)
 							  :	NULL;
-						if (dev->priv) memset(dev->priv, 0, sizeof_priv);
+						if (dev->priv)
+							memset(dev->priv, 0, sizeof_priv);
 						goto found;
 					}
+				}
 			}
 
 		alloc_size &= ~3;		/* Round to dword boundary. */
@@ -106,7 +108,7 @@ init_etherdev(struct device *dev, int sizeof_priv)
 		dev = (struct device *)kmalloc(alloc_size, GFP_KERNEL);
 		memset(dev, 0, alloc_size);
 		if (sizeof_priv)
-			dev->priv = (void *) (dev + 1);
+			dev->priv = (void *)(dev + 1);
 		dev->name = sizeof_priv + (char *)(dev + 1);
 		new_device = 1;
 	}
@@ -124,7 +126,7 @@ init_etherdev(struct device *dev, int sizeof_priv)
 	}
 
 	ether_setup(dev); 	/* Hmmm, should this be called here? */
-	
+
 	if (new_device) {
 		/* Append the device to the device queue. */
 		struct device **old_devp = &dev_base;
@@ -133,6 +135,7 @@ init_etherdev(struct device *dev, int sizeof_priv)
 		(*old_devp)->next = dev;
 		dev->next = 0;
 	}
+
 	return dev;
 }
 
@@ -175,28 +178,28 @@ void ether_setup(struct device *dev)
 		}
 	}
 
-	dev->change_mtu		= eth_change_mtu;
-	dev->hard_header	= eth_header;
-	dev->rebuild_header 	= eth_rebuild_header;
-	dev->set_mac_address 	= eth_mac_addr;
-	dev->header_cache_bind 	= eth_header_cache_bind;
-	dev->header_cache_update= eth_header_cache_update;
+	dev->change_mtu = eth_change_mtu;
+	dev->hard_header = eth_header;
+	dev->rebuild_header = eth_rebuild_header;
+	dev->set_mac_address = eth_mac_addr;
+	dev->header_cache_bind = eth_header_cache_bind;
+	dev->header_cache_update = eth_header_cache_update;
 
-	dev->type		= ARPHRD_ETHER;
-	dev->hard_header_len 	= ETH_HLEN;
-	dev->mtu		= 1500; /* eth_mtu */
-	dev->addr_len		= ETH_ALEN;
-	dev->tx_queue_len	= 100;	/* Ethernet wants good queues */	
-	
+	dev->type = ARPHRD_ETHER;
+	dev->hard_header_len = ETH_HLEN;
+	dev->mtu = 1500; /* eth_mtu */
+	dev->addr_len = ETH_ALEN;
+	dev->tx_queue_len = 100;	/* Ethernet wants good queues */
+
 	memset(dev->broadcast,0xFF, ETH_ALEN);
 
 	/* New-style flags. */
-	dev->flags		= IFF_BROADCAST|IFF_MULTICAST;
-	dev->family		= AF_INET;
-	dev->pa_addr	= 0;
+	dev->flags = IFF_BROADCAST|IFF_MULTICAST;
+	dev->family = AF_INET;
+	dev->pa_addr = 0;
 	dev->pa_brdaddr = 0;
-	dev->pa_mask	= 0;
-	dev->pa_alen	= 4;
+	dev->pa_mask = 0;
+	dev->pa_alen = 4;
 }
 
 #ifdef CONFIG_TR
@@ -209,24 +212,24 @@ void tr_setup(struct device *dev)
 	for (i = 0; i < DEV_NUMBUFFS; i++)
 		skb_queue_head_init(&dev->buffs[i]);
 
-	dev->hard_header	= tr_header;
-	dev->rebuild_header 	= tr_rebuild_header;
+	dev->hard_header = tr_header;
+	dev->rebuild_header = tr_rebuild_header;
 
-	dev->type		= ARPHRD_IEEE802;
-	dev->hard_header_len 	= TR_HLEN;
-	dev->mtu		= 2000; /* bug in fragmenter...*/
-	dev->addr_len		= TR_ALEN;
-	dev->tx_queue_len	= 100;	/* Long queues on tr */
-	
+	dev->type = ARPHRD_IEEE802;
+	dev->hard_header_len = TR_HLEN;
+	dev->mtu = 2000; /* bug in fragmenter...*/
+	dev->addr_len = TR_ALEN;
+	dev->tx_queue_len = 100;	/* Long queues on tr */
+
 	memset(dev->broadcast,0xFF, TR_ALEN);
 
 	/* New-style flags. */
-	dev->flags		= IFF_BROADCAST;
-	dev->family		= AF_INET;
-	dev->pa_addr	= 0;
+	dev->flags = IFF_BROADCAST;
+	dev->family = AF_INET;
+	dev->pa_addr = 0;
 	dev->pa_brdaddr = 0;
-	dev->pa_mask	= 0;
-	dev->pa_alen	= 4;
+	dev->pa_mask = 0;
+	dev->pa_alen = 4;
 }
 
 #endif
@@ -285,8 +288,10 @@ int register_netdev(struct device *dev)
 		}
 		else
 			dev_base = dev;
+
 		dev->next = NULL;
 	}
+
 	restore_flags(flags);
 	return 0;
 }
@@ -300,12 +305,12 @@ void unregister_netdev(struct device *dev)
 	save_flags(flags);
 	cli();
 
-	if (dev == NULL) 
-	{
+	if (dev == NULL) {
 		printk("was NULL\n");
 		restore_flags(flags);
 		return;
 	}
+
 	/* else */
 	if (dev->start)
 		printk("ERROR '%s' busy and not MOD_IN_USE.\n", dev->name);
@@ -315,45 +320,39 @@ void unregister_netdev(struct device *dev)
 	 * 	avoid alias devices unregistration so that only
 	 * 	net_alias module manages them
 	 */
-#ifdef CONFIG_NET_ALIAS		
+#ifdef CONFIG_NET_ALIAS
 	if (dev_base == dev)
 		dev_base = net_alias_nextdev(dev);
-	else
-	{
+	else {
 		while(d && (net_alias_nextdev(d) != dev)) /* skip aliases */
 			d = net_alias_nextdev(d);
-	  
-		if (d && (net_alias_nextdev(d) == dev))
-		{
+
+		if (d && (net_alias_nextdev(d) == dev)) {
 			/*
 			 * 	Critical: Bypass by consider devices as blocks (maindev+aliases)
 			 */
-			net_alias_nextdev_set(d, net_alias_nextdev(dev)); 
+			net_alias_nextdev_set(d, net_alias_nextdev(dev));
 		}
 #else
 	if (dev_base == dev)
 		dev_base = dev->next;
-	else 
-	{
+	else {
 		while (d && (d->next != dev))
 			d = d->next;
-		
-		if (d && (d->next == dev)) 
-		{
+
+		if (d && (d->next == dev)) {
 			d->next = dev->next;
 		}
 #endif
-		else 
-		{
+		else {
 			printk("unregister_netdev: '%s' not found\n", dev->name);
 			restore_flags(flags);
 			return;
 		}
 	}
-	for (i = 0; i < MAX_ETH_CARDS; ++i) 
-	{
-		if (ethdev_index[i] == dev) 
-		{
+
+	for (i = 0; i < MAX_ETH_CARDS; ++i) {
+		if (ethdev_index[i] == dev) {
 			ethdev_index[i] = NULL;
 			break;
 		}
@@ -369,11 +368,10 @@ void unregister_netdev(struct device *dev)
 	 *	This will call notifier_call_chain(&netdev_chain, NETDEV_DOWN, dev),
 	 *	dev_mc_discard(dev), ....
 	 */
-	 
+
 	dev_close(dev);
 }
 
-
 /*
  * Local variables:
  *  compile-command: "gcc -D__KERNEL__ -I/usr/src/linux/net/inet -Wall -Wstrict-prototypes -O6 -m486 -c net_init.c"

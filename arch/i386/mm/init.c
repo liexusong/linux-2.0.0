@@ -110,6 +110,7 @@ extern unsigned long free_area_init(unsigned long, unsigned long);
  * This routines also unmaps the page at virtual kernel address 0, so
  * that we can trap those pesky NULL-reference errors in the kernel.
  */
+// 在内核空间映射所有的内存地址
 unsigned long paging_init(unsigned long start_mem, unsigned long end_mem)
 {
 	pgd_t * pg_dir;
@@ -150,9 +151,9 @@ unsigned long paging_init(unsigned long start_mem, unsigned long end_mem)
 #endif
 	start_mem = PAGE_ALIGN(start_mem);
 	address = 0;
-	pg_dir = swapper_pg_dir;  // 页目录地址
+	pg_dir = swapper_pg_dir;  // 内核空间的页目录
 
-	while (address < end_mem) {
+	while (address < end_mem) { // 从虚拟地址0开始映射
 #ifdef USE_PENTIUM_MM
 		/*
 		 * This will create page tables that
@@ -163,39 +164,39 @@ unsigned long paging_init(unsigned long start_mem, unsigned long end_mem)
 		if (x86_capability & 8) { // 启用了4MB的内存页
 #ifdef GAS_KNOWS_CR4
 			__asm__("movl %%cr4,%%eax\n\t"
-				"orl $16,%%eax\n\t"
-				"movl %%eax,%%cr4"
-				: : :"ax");
+					"orl $16,%%eax\n\t"
+					"movl %%eax,%%cr4"
+					: : :"ax");
 #else
 			__asm__(".byte 0x0f,0x20,0xe0\n\t"
-				"orl $16,%%eax\n\t"
-				".byte 0x0f,0x22,0xe0"
-				: : :"ax");
+					"orl $16,%%eax\n\t"
+					".byte 0x0f,0x22,0xe0"
+					: : :"ax");
 #endif
 			wp_works_ok = 1;
 			// 虚拟地址0指向物理地址0
-			pgd_val(pg_dir[0]) = _PAGE_TABLE | _PAGE_4M | address;
+			pgd_val(pg_dir[0])   = _PAGE_TABLE | _PAGE_4M | address;
 			// 虚拟地址0xC0000000指向物理地址0
 			pgd_val(pg_dir[768]) = _PAGE_TABLE | _PAGE_4M | address;
 			pg_dir++;
-			address += 4*1024*1024;
+			address += 4*1024*1024; // 4MB
 			continue;
 		}
 #endif
 		/* map the memory at virtual addr 0xC0000000 */
 		pg_table = (pte_t *) (PAGE_MASK & pgd_val(pg_dir[768]));
 		if (!pg_table) {
-			pg_table = (pte_t *) start_mem; // 放置到内核影像之后
+			pg_table = (pte_t *)start_mem; // 放置到内核影像之后
 			start_mem += PAGE_SIZE;
 		}
 
 		/* also map it temporarily at 0x0000000 for init */
-		pgd_val(pg_dir[0])   = _PAGE_TABLE | (unsigned long) pg_table;
-		pgd_val(pg_dir[768]) = _PAGE_TABLE | (unsigned long) pg_table;
+		pgd_val(pg_dir[0])   = _PAGE_TABLE | (unsigned long)pg_table;
+		pgd_val(pg_dir[768]) = _PAGE_TABLE | (unsigned long)pg_table;
 
 		pg_dir++;
 
-		for (tmp = 0 ; tmp < PTRS_PER_PTE ; tmp++,pg_table++) { // 循环1024次
+		for (tmp = 0 ; tmp < PTRS_PER_PTE ; tmp++, pg_table++) { // 循环1024次
 			if (address < end_mem)
 				set_pte(pg_table, mk_pte(address, PAGE_SHARED)); // *pg_table = address;
 			else
@@ -216,7 +217,7 @@ void mem_init(unsigned long start_mem, unsigned long end_mem)
 	unsigned long tmp;
 	extern int _etext;
 
-	end_mem &= PAGE_MASK;
+	end_mem     &= PAGE_MASK;
 	high_memory = end_mem;
 
 	/* clear the zero-page */

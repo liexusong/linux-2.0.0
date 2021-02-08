@@ -3,8 +3,8 @@
  */
 
 #if !defined(One)
-#define Zero    0
-#define One	1
+#define Zero	0
+#define One		1
 #endif  /* !defined(One) */
 
 #if !defined(TRUE)
@@ -30,9 +30,9 @@
 #define FDB_TIMEOUT	300
 
 /*
- * the following defines are the initial values used when the 
+ * the following defines are the initial values used when the
  * bridge is booted.  These may be overridden when this bridge is
- * not the root bridge.  These are the recommended default values 
+ * not the root bridge.  These are the recommended default values
  * from the 802.1d specification.
  */
 #define BRIDGE_MAX_AGE		20
@@ -72,7 +72,7 @@ typedef struct {
 #define BRIDGE_ID	bi.id
 
 typedef struct {
-	unsigned short	protocol_id;	
+	unsigned short	protocol_id;
 	unsigned char	protocol_version_id;
 	unsigned char   type;
 	unsigned char   flags;
@@ -92,7 +92,7 @@ typedef struct {
 /** Topology Change Notification BPDU Parameters (4.5.2) **/
 
 typedef struct {
-	unsigned short	protocol_id;	
+	unsigned short	protocol_id;
 	unsigned char	protocol_version_id;
 	unsigned char   type;
 } Tcn_bpdu;
@@ -131,7 +131,7 @@ typedef struct {
 	unsigned short   designated_port;	  /* (4.5.5.7)	 */
 	unsigned int     top_change_ack;	  /* (4.5.5.8)	 */
 	unsigned int     config_pending;	  /* (4.5.5.9)	 */
-	struct device *dev;	
+	struct device *dev;
 	struct fdb *fdb;	/* head of per port fdb chain */
 } Port_data;
 

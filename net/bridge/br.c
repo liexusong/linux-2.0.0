@@ -19,9 +19,9 @@
  *		Put the path costs in the port info and devices.
  *		Put the bridge port number in the device structure for speed.
  *		Bridge SNMP stats.
- *	
+ *
  */
- 
+
 #include <linux/errno.h>
 #include <linux/types.h>
 #include <linux/socket.h>
@@ -62,7 +62,7 @@ Timer           forward_delay_timer[All_ports];	  /* (4.5.6.2)	 */
 Timer           hold_timer[All_ports];		  /* (4.5.6.3)	 */
 
 /* entries timeout after this many seconds */
-unsigned int fdb_aging_time = FDB_TIMEOUT; 
+unsigned int fdb_aging_time = FDB_TIMEOUT;
 
 struct br_stat br_stats;
 
@@ -142,7 +142,7 @@ int supersedes_port_info(int port_no, Config_bpdu *config)	  /* (4.6.2.2)	 */
 {
 	return (
 		(br_cmp(config->root_id.BRIDGE_ID,
-		 port_info[port_no].designated_root.BRIDGE_ID) < 0)	/* (4.6.2.2.1)	 */ 
+		 port_info[port_no].designated_root.BRIDGE_ID) < 0)	/* (4.6.2.2.1)	 */
 		||
 		((br_cmp(config->root_id.BRIDGE_ID,
 		  port_info[port_no].designated_root.BRIDGE_ID) == 0
@@ -603,7 +603,7 @@ void br_init(void)
 	}
 	port_state_selection();			  /* (4.8.1.5)	 */
 	config_bpdu_generation();		  /* (4.8.1.6)	 */
-	
+
 	/* initialize system timer */
 	tl.expires = jiffies+HZ;	/* 1 second */
 	tl.function = br_tick;
@@ -875,7 +875,7 @@ struct sk_buff *skb;
 struct device *dev = port_info[port_no].dev;
 int size;
 unsigned long flags;
-	
+
 	if (port_info[port_no].state == Disabled) {
 		printk(KERN_DEBUG "send_config_bpdu: port %i not valid\n",port_no);
 		return(-1);
@@ -898,7 +898,7 @@ unsigned long flags;
 	memcpy(skb->h.eth->h_source, dev->dev_addr, ETH_ALEN);
 	if (br_stats.flags & BR_DEBUG)
 		printk("port %i src %02x:%02x:%02x:%02x:%02x:%02x\
-			dest %02x:%02x:%02x:%02x:%02x:%02x\n", 
+			dest %02x:%02x:%02x:%02x:%02x:%02x\n",
 			port_no,
 			skb->h.eth->h_source[0],
 			skb->h.eth->h_source[1],
@@ -934,7 +934,7 @@ struct sk_buff *skb;
 struct device *dev = port_info[port_no].dev;
 int size;
 unsigned long flags;
-	
+
 	if (port_info[port_no].state == Disabled) {
 		printk(KERN_DEBUG "send_tcn_bpdu: port %i not valid\n",port_no);
 		return(-1);
@@ -954,7 +954,7 @@ unsigned long flags;
 	memcpy(skb->h.eth->h_source, dev->dev_addr, ETH_ALEN);
 	if (br_stats.flags & BR_DEBUG)
 		printk("port %i src %02x:%02x:%02x:%02x:%02x:%02x\
-			dest %02x:%02x:%02x:%02x:%02x:%02x\n", 
+			dest %02x:%02x:%02x:%02x:%02x:%02x\n",
 			port_no,
 			skb->h.eth->h_source[0],
 			skb->h.eth->h_source[1],
@@ -1019,7 +1019,7 @@ static int br_device_event(struct notifier_block *unused, unsigned long event, v
 				port_info[i].dev = dev;
 				enable_port(i);
 				set_path_cost(i, br_port_cost(dev));
-				set_port_priority(i, 128); 
+				set_port_priority(i, 128);
 				port_info[i].port_id = i;
 				/* set bridge addr from 1st device addr */
 				if ((bridge_info.bridge_id.BRIDGE_ID[0] == 0) &&
@@ -1027,7 +1027,7 @@ static int br_device_event(struct notifier_block *unused, unsigned long event, v
 					memcpy(bridge_info.bridge_id.BRIDGE_ID_ULA, dev->dev_addr, 6);
 					bridge_info.bridge_id.BRIDGE_PRIORITY = port_info[i].port_id;
 					set_bridge_priority(&bridge_info.bridge_id);
-				}	
+				}
 				make_forwarding(i);
 				return NOTIFY_DONE;
 				break;
@@ -1038,7 +1038,7 @@ static int br_device_event(struct notifier_block *unused, unsigned long event, v
 	default:
 		printk("br_device_event: unknown event [%x]\n",
 			(unsigned int)event);
-#endif			
+#endif
 	}
 	return NOTIFY_DONE;
 }
@@ -1052,7 +1052,7 @@ static int br_device_event(struct notifier_block *unused, unsigned long event, v
 int br_receive_frame(struct sk_buff *skb)	/* 3.5 */
 {
 	int port;
-	
+
 	if (br_stats.flags & BR_DEBUG)
 		printk("br_receive_frame: ");
 	/* sanity */
@@ -1068,12 +1068,12 @@ int br_receive_frame(struct sk_buff *skb)	/* 3.5 */
 		return(0);
 
 	port = find_port(skb->dev);
-	
+
 	skb->arp = 1;		/* Received frame so it is resolved */
 	skb->h.raw = skb->mac.raw;
 	if (br_stats.flags & BR_DEBUG)
 		printk("port %i src %02x:%02x:%02x:%02x:%02x:%02x\
-			dest %02x:%02x:%02x:%02x:%02x:%02x\n", 
+			dest %02x:%02x:%02x:%02x:%02x:%02x\n",
 			port,
 			skb->h.eth->h_source[0],
 			skb->h.eth->h_source[1],
@@ -1094,7 +1094,7 @@ int br_receive_frame(struct sk_buff *skb)	/* 3.5 */
 		return(0);
 	}
 
-	switch (port_info[port].state) 
+	switch (port_info[port].state)
 	{
 		case Learning:
 			(void) br_learn(skb, port);	/* 3.8 */
@@ -1111,25 +1111,20 @@ int br_receive_frame(struct sk_buff *skb)	/* 3.5 */
 		case Disabled:
 			/* should drop frames, but for now, we let
 			 * them get passed up to the next higher layer
-			return(br_drop(skb));	
+			return(br_drop(skb));
 			 */
 			return(0);	/* pass frame up stack */
 			break;
 		case Forwarding:
 			(void) br_learn(skb, port);	/* 3.8 */
 			/* process BPDUs */
-			if (memcmp(skb->h.eth->h_dest, bridge_ula, 
-					ETH_ALEN) == 0) 
-			{
+			if (memcmp(skb->h.eth->h_dest, bridge_ula, ETH_ALEN) == 0) {
 				/*printk("frame bpdu processor for me!!!\n");*/
 				br_bpdu(skb);
 				return(1); /* br_bpdu consumes skb */
 			}
-			/* is frame for me? */	
-			if (memcmp(skb->h.eth->h_dest, 
-					port_info[port].dev->dev_addr, 
-					ETH_ALEN) == 0) 
-			{
+			/* is frame for me? */
+			if (memcmp(skb->h.eth->h_dest, port_info[port].dev->dev_addr, ETH_ALEN) == 0) {
 				return(0);	/* pass frame up our stack (this will */
 						/* happen in net_bh() in dev.c) */
 			}
@@ -1152,9 +1147,9 @@ int br_receive_frame(struct sk_buff *skb)	/* 3.5 */
 int br_tx_frame(struct sk_buff *skb)	/* 3.5 */
 {
 	int port;
-	
+
 	/* sanity */
-	if (!skb) 
+	if (!skb)
 	{
 		printk(KERN_CRIT "br_tx_frame: no skb!\n");
 		return(0);
@@ -1164,10 +1159,10 @@ int br_tx_frame(struct sk_buff *skb)	/* 3.5 */
 		return(0);
 
 	skb->h.raw = skb->data;
-	port = 0;	/* an impossible port */	
+	port = 0;	/* an impossible port */
 	if (br_stats.flags & BR_DEBUG)
 		printk("br_tx_fr : port %i src %02x:%02x:%02x:%02x:%02x:%02x\
-	  		dest %02x:%02x:%02x:%02x:%02x:%02x\n", 
+	  		dest %02x:%02x:%02x:%02x:%02x:%02x\n",
 			port,
 			skb->h.eth->h_source[0],
 			skb->h.eth->h_source[1],
@@ -1206,8 +1201,8 @@ int br_learn(struct sk_buff *skb, int port)	/* 3.8 */
 			/* don't keep group addresses in the tree */
 			if (skb->h.eth->h_source[0] & 0x01)
 				return(-1);
-			
-			f = (struct fdb *)kmalloc(sizeof(struct fdb), 
+
+			f = (struct fdb *)kmalloc(sizeof(struct fdb),
 				GFP_ATOMIC);
 
 			if (!f) {
@@ -1263,15 +1258,15 @@ int br_dev_drop(struct sk_buff *skb)
 int br_forward(struct sk_buff *skb, int port)	/* 3.7 */
 {
 	struct fdb *f;
-	
+
 	/*
    	 * flood all ports with frames destined for a group
 	 * address.  If frame came from above, drop it,
 	 * otherwise it will be handled in br_receive_frame()
 	 * Multicast frames will also need to be seen
 	 * by our upper layers.
-	 */	
-	if (skb->h.eth->h_dest[0] & 0x01) 
+	 */
+	if (skb->h.eth->h_dest[0] & 0x01)
 	{
 		/* group address */
 		br_flood(skb, port);
@@ -1312,16 +1307,16 @@ int br_forward(struct sk_buff *skb, int port)	/* 3.7 */
 			}
 			/* mark that's we've been here... */
 			skb->pkt_bridged = IS_BRIDGED;
-			
-			/* reset the skb->ip pointer */	
+
+			/* reset the skb->ip pointer */
 			skb->h.raw = skb->data + ETH_HLEN;
 
 			/*
 			 *	Send the buffer out.
 			 */
-			 
+
 			skb->dev=port_info[f->port].dev;
-			 
+
 			/*
 			 *	We send this still locked
 			 */
@@ -1341,26 +1336,26 @@ int br_forward(struct sk_buff *skb, int port)	/* 3.7 */
  * with the exception of the port given.  This routine never
  * consumes the original frame.
  */
-	
+
 int br_flood(struct sk_buff *skb, int port)
 {
 	int i;
 	struct sk_buff *nskb;
 
-	for (i = One; i <= No_of_ports; i++) 
+	for (i = One; i <= No_of_ports; i++)
 	{
 		if (i == port)
 			continue;
-		if (port_info[i].state == Forwarding) 
+		if (port_info[i].state == Forwarding)
 		{
 			nskb = skb_clone(skb, GFP_ATOMIC);
 			/* mark that's we've been here... */
 			nskb->pkt_bridged = IS_BRIDGED;
 			nskb->arp = skb->arp;
-			
+
 /*			printk("Flood to port %d\n",i);*/
 			nskb->h.raw = nskb->data + ETH_HLEN;
-			dev_queue_xmit(nskb,nskb->dev,1);
+			dev_queue_xmit(nskb, nskb->dev, 1);
 		}
 	}
 	return(0);
@@ -1371,7 +1366,7 @@ int find_port(struct device *dev)
 	int i;
 
 	for (i = One; i <= No_of_ports; i++)
-		if ((port_info[i].dev == dev) && 
+		if ((port_info[i].dev == dev) &&
 			(port_info[i].state != Disabled))
 			return(i);
 	return(0);
@@ -1389,7 +1384,7 @@ int br_port_cost(struct device *dev)	/* 4.10.2 */
 }
 
 /*
- * this routine always consumes the skb 
+ * this routine always consumes the skb
  */
 
 void br_bpdu(struct sk_buff *skb) /* consumes skb */
@@ -1402,7 +1397,7 @@ void br_bpdu(struct sk_buff *skb) /* consumes skb */
 		br_drop(skb);
 		return;
 	}
-		
+
 	bpdu = (Tcn_bpdu *)skb->data + ETH_HLEN;
 	switch (bpdu->type) {
 		case BPDU_TYPE_CONFIG:
@@ -1427,7 +1422,7 @@ int br_ioctl(unsigned int cmd, void *arg)
 	switch(cmd)
 	{
 		case SIOCGIFBR:	/* get bridging control blocks */
-			err = verify_area(VERIFY_WRITE, arg, 
+			err = verify_area(VERIFY_WRITE, arg,
 				sizeof(struct br_stat));
 			if(err)
 				return err;
@@ -1438,7 +1433,7 @@ int br_ioctl(unsigned int cmd, void *arg)
 		case SIOCSIFBR:
 			if (!suser())
 				return -EPERM;
-			err = verify_area(VERIFY_READ, arg, 
+			err = verify_area(VERIFY_READ, arg,
 				sizeof(struct br_cf));
 			if(err)
 				return err;
@@ -1446,22 +1441,22 @@ int br_ioctl(unsigned int cmd, void *arg)
 			switch (bcf.cmd) {
 				case BRCMD_BRIDGE_ENABLE:
 					if (br_stats.flags & BR_UP)
-						return(-EALREADY);	
+						return(-EALREADY);
 					printk(KERN_DEBUG "br: enabling bridging function\n");
 					br_stats.flags |= BR_UP;	/* enable bridge */
 					start_hello_timer();
 					break;
 				case BRCMD_BRIDGE_DISABLE:
 					if (!(br_stats.flags & BR_UP))
-						return(-EALREADY);	
+						return(-EALREADY);
 					printk(KERN_DEBUG "br: disabling bridging function\n");
 					br_stats.flags &= ~BR_UP;	/* disable bridge */
 					stop_hello_timer();
-#if 0					
+#if 0
 					for (i = One; i <= No_of_ports; i++)
 						if (port_info[i].state != Disabled)
 							disable_port(i);
-#endif							
+#endif
 					break;
 				case BRCMD_PORT_ENABLE:
 					if (port_info[bcf.arg1].dev == 0)
@@ -1511,8 +1506,8 @@ int br_ioctl(unsigned int cmd, void *arg)
 
 int br_cmp(unsigned int *a, unsigned int *b)
 {
-	int i;	
-	for (i=0; i<2; i++) 
+	int i;
+	for (i=0; i<2; i++)
 	{
 		if (a[i] == b[i])
 			continue;
@@ -1523,4 +1518,4 @@ int br_cmp(unsigned int *a, unsigned int *b)
 	}
 	return(0);
 }
-		
+
