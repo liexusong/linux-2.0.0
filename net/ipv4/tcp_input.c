@@ -1708,13 +1708,16 @@ int tcp_chkaddr(struct sk_buff *skb)
  */
 
 int
-tcp_rcv(struct sk_buff *skb, struct device *dev,
-        struct options *opt, __u32 daddr, unsigned short len,
-        __u32 saddr, int redo, struct inet_protocol * protocol)
+tcp_rcv(struct sk_buff *skb,
+        struct device *dev,
+        struct options *opt,
+        __u32 daddr, unsigned short len,
+        __u32 saddr, int redo,
+        struct inet_protocol *protocol)
 {
     struct tcphdr *th;
     struct sock *sk;
-    int syn_ok=0;
+    int syn_ok = 0;
 #ifdef CONFIG_IP_TRANSPARENT_PROXY
     int r;
 #endif
@@ -1820,7 +1823,7 @@ tcp_rcv(struct sk_buff *skb, struct device *dev,
         /*
          *    Now deal with unusual cases.
          */
-        if (sk->state==TCP_LISTEN) { // 处理 listen 状态的 socket
+        if (sk->state == TCP_LISTEN) { // 处理 listen 状态的 socket
             if (th->ack)    /* These use the socket TOS.. might want to be the received TOS */
                 tcp_send_reset(daddr,saddr,th,sk->prot,opt,dev,sk->ip_tos, sk->ip_ttl);
 
