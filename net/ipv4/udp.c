@@ -419,8 +419,8 @@ static int udp_sendto(struct sock *sk, const unsigned char *from,
 	/* af_inet.c checks these. It does need work to allow BSD style */
 	/* bind to multicast as is done by xntpd		*/
 
-	if (usin->sin_addr.s_addr==INADDR_ANY)
-		usin->sin_addr.s_addr=ip_my_addr();
+	if (usin->sin_addr.s_addr == INADDR_ANY)
+		usin->sin_addr.s_addr = ip_my_addr();
 
 	if (!sk->broadcast && ip_chk_addr(usin->sin_addr.s_addr) == IS_BROADCAST)
 	  	return -EACCES;			/* Must turn broadcast on first */
@@ -432,6 +432,7 @@ static int udp_sendto(struct sock *sk, const unsigned char *from,
 
 	/* The datagram has been sent off.  Release the socket. */
 	release_sock(sk);
+
 	return(tmp);
 }
 
@@ -442,9 +443,10 @@ static int udp_sendto(struct sock *sk, const unsigned char *from,
 static int udp_sendmsg(struct sock *sk, struct msghdr *msg,
 					   int len, int noblock, int flags)
 {
-	if (msg->msg_iovlen == 1)
-		return udp_sendto(sk,msg->msg_iov[0].iov_base,len, noblock,
-						  flags, msg->msg_name, msg->msg_namelen);
+	if (msg->msg_iovlen == 1) {
+		return udp_sendto(sk,msg->msg_iov[0].iov_base,len, noblock, flags,
+						  msg->msg_name, msg->msg_namelen);
+	}
 	else
 	{
 		/*
@@ -468,8 +470,8 @@ static int udp_sendmsg(struct sock *sk, struct msghdr *msg,
 		fs = get_fs();
 		set_fs(get_ds());
 
-		err = udp_sendto(sk,buf,len, noblock, flags,
-						 msg->msg_name, msg->msg_namelen);
+		err = udp_sendto(sk,buf,len, noblock, flags, msg->msg_name,
+						 msg->msg_namelen);
 
 		set_fs(fs);
 		kfree_s(buf,len);
@@ -753,7 +755,6 @@ int udp_rcv(struct sk_buff *skb, struct device *dev,
 	ulen = ntohs(uh->len);
 
 	if (ulen > len || len < sizeof(*uh) || ulen < sizeof(*uh)) {
-		NETDEBUG(printk("UDP: short packet: %d/%d\n", ulen, len));
 		udp_statistics.UdpInErrors++;
 		kfree_skb(skb, FREE_WRITE);
 		return(0);
@@ -778,10 +779,6 @@ int udp_rcv(struct sk_buff *skb, struct device *dev,
 
 	  /* RFC1122: OK.  Discards the bad packet silently (as far as */
 	  /* the network is concerned, anyway) as per 4.1.3.4 (MUST). */
-
-		NETDEBUG(printk("UDP: bad checksum. From %08lX:%d to %08lX:%d ulen %d\n",
-				 ntohl(saddr),ntohs(uh->source), ntohl(daddr),ntohs(uh->dest), ulen));
-
 		udp_statistics.UdpInErrors++;
 		kfree_skb(skb, FREE_WRITE);
 
@@ -841,11 +838,13 @@ int udp_rcv(struct sk_buff *skb, struct device *dev,
 		&& daddr == uh_cache_daddr
 		&& uh->dest == uh_cache_dport
 		&& uh->source == uh_cache_sport)
+	{
 		sk = (struct sock *)uh_cache_sk;
+	}
 	else
 	{
-		sk = get_sock(&udp_prot, uh->dest, saddr, uh->source,
-					  daddr, dev->pa_addr, skb->redirport);
+		sk = get_sock(&udp_prot, uh->dest, saddr, uh->source, daddr,
+					  dev->pa_addr, skb->redirport);
 
 		uh_cache_saddr = saddr;
 		uh_cache_daddr = daddr;

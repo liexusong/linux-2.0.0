@@ -87,7 +87,7 @@ struct fib_node
     __u32             fib_dst;   // 目的IP地址
     unsigned long     fib_use;   // 使用计数器
     struct fib_info   *fib_info; // FIB信息
-    short             fib_metric;
+    short             fib_metric;// 度量标准
     unsigned char     fib_tos;   // 服务类型
 };
 
@@ -99,7 +99,7 @@ struct fib_info
 {
     struct fib_info      *fib_next;
     struct fib_info      *fib_prev;
-    __u32                fib_gateway;
+    __u32                fib_gateway; // 网关地址
     struct device        *fib_dev;
     int                  fib_refcnt;
     unsigned long        fib_window;
