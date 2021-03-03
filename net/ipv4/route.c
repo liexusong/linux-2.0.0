@@ -1045,9 +1045,9 @@ void ip_rt_check_expire()
                  * LRU ordering.
                  */
 
-                if (rth->rt_lastuse + RT_CACHE_BUBBLE_THRESHOLD < rth_next->rt_lastuse ||
-                    (rth->rt_lastuse < rth_next->rt_lastuse &&
-                     rth->rt_use < rth_next->rt_use))
+                if (rth->rt_lastuse + RT_CACHE_BUBBLE_THRESHOLD < rth_next->rt_lastuse
+                    || (rth->rt_lastuse < rth_next->rt_lastuse
+                        && rth->rt_use < rth_next->rt_use))
                 {
                     cli();
                     *rthp = rth_next;
